@@ -1,35 +1,33 @@
 #include "config.h"
 
 #define CONFFILE "monitor.conf"
+#define REPFILE  "relatorio.txt"
 
-int carregarConfiguracao(char* filename) {
-    char buf[BUF_SIZE];
-    int bytes_read, bytes_written;
-    int fd;
-
-    if (filename != CONFFILE) {
-        return -1;
-    }
-
-    bytes_read = read(STDIN, buf, BUF_SIZE);
-    if (bytes_read < 0) {
-        printf("Ocorreu um erro na leitura: %s\n", strerror(errno));
-        return -1;
-    }
-
-    fd = open(filename, O_RDONLY, S_IRWXU);
-    if (fd < 0) {
-        printf("Ocorreu um erro na abertura do ficheiro: %s\n", strerror(errno));
-        return -1;
-    }
-
-    close(fd);
-
-    return 1;
+void atribuirConfiguracao(struct MonConfig *monConfiguration, char** results) {
+    monConfiguration->nomeParque = results[0];
+    return;
 }
 
-int main(int argc, char *argv[]) {
+void escreveRelatorio (char* phrase) {
+    FILE* report = fopen(REPFILE, "w");
 
-    carregarConfiguracao(argv[0]);
+    fprintf(report, "--------------------------------");
+    fprintf(report, "\nBem vindo ao %s", phrase);
+    fprintf(report, "\n--------------------------------");
+    fclose(report);
+}
 
+int main(int argc, char **argv) {
+
+    struct MonConfig monConfiguration;
+    
+    if (strcmp(argv[1], CONFFILE) != 0) {
+        printf("Nome do ficheiro de configuracao incorreto. %s\n", argv[1]);
+        return 1;
+    }
+
+    atribuirConfiguracao(&monConfiguration, carregarConfiguracao(argv[1]));
+    printf("%s", monConfiguration.nomeParque);
+    escreveRelatorio(monConfiguration.nomeParque);
+    return 0;
 }

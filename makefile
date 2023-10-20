@@ -6,4 +6,5 @@ simulador: simulador.c config.h
 monitor: monitor.c config.h
 			gcc -c -g monitor.c && gcc -g -o monitor monitor.o -lpthread
 
-clean: rm *.o simulador monitor
+clean: 
+		rm *.o simulador monitor
