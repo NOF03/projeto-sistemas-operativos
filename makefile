@@ -1,10 +1,19 @@
-all: clean simulador monitor
+# Specify the build directory
+BUILD_DIR := build
 
-simulador: simulador.c config.h
-			gcc -c -g simulador.c && gcc -g -o simulador simulador.o -lpthread
+all: clean $(BUILD_DIR)/simulador $(BUILD_DIR)/monitor
 
-monitor: monitor.c config.h
-			gcc -c -g monitor.c && gcc -g -o monitor monitor.o -lpthread
+$(BUILD_DIR)/simulador: $(BUILD_DIR)/simulador.o
+	gcc -g -o $@ $^ -lpthread
 
-clean: 
-		rm *.o simulador monitor
+$(BUILD_DIR)/monitor: $(BUILD_DIR)/monitor.o
+	gcc -g -o $@ $^ -lpthread
+
+$(BUILD_DIR)/%.o: %.c config.h | $(BUILD_DIR)
+	gcc -c -g $< -o $@
+
+$(BUILD_DIR):
+	mkdir -p $@
+
+clean:
+	if [ -d "$(BUILD_DIR)" ]; then rm -r "$(BUILD_DIR)"; fi

@@ -1,5 +1,2 @@
 .vscode/
-*.o
-monitor
-simulador
-.gitignore
+build/
