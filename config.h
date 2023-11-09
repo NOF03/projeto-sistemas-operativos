@@ -9,21 +9,32 @@
 #include <fcntl.h>
 #include <string.h>
 #include <regex.h>
+#include <stdbool.h>
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 512
 #define STDIN 0
 
 #define FALSE 0
 #define TRUE 1
 
-#define UNIXSTR_PATH "/tmp/s.unixstr"
+#define UNIXSTR_PATH "/tmp/s.2082021"
 
-struct SimConfig {
-    int tempochegada;
-    int simdias;    
+struct simConfig {
+    int tempoChegada;
+    int simDias;
+	int tamMaxFilaAtracoes;
+	float probSairFilaEntrada;
+	float probSairAtracoes;
+	bool tobogansFunci;
+	bool piscinaFunci;
+	bool pistasFunci;
+	float probSairSemUmaAtracao;
+	int lotEstacionamento;
+	int lotParque;
+	float probSairSemEstacionamento;
 };
 
-struct MonConfig {
+struct monConfig {
     char* nomeParque;
 };
 
@@ -39,7 +50,7 @@ char** carregarConfiguracao(char* filename) {
     regex_t regex;
     int ret;
     regmatch_t rm[2];
-    const char* pattern = ":(\\w+)";
+    const char* pattern = ":(.*)$";
     char* line = (char*)malloc(BUF_SIZE * sizeof(char));
     int result_count = 0;
     char** results = (char**)malloc(BUF_SIZE * sizeof(char*));
@@ -66,11 +77,12 @@ char** carregarConfiguracao(char* filename) {
     return results;
 };
 
+
 int readn(int fd, char *ptr, int nbytes)
 {
 	int nleft, nread;
 
-	nleft = nbytes;
+	nleft = BUF_SIZE;
 	while (nleft > 0)
 	{
 		nread = read(fd, ptr, nleft);
@@ -143,72 +155,4 @@ void err_dump(char *msg)
 {
 	perror(msg);
 	exit(1);
-}
-
-void str_cli(FILE *fp, int sockfd)
-{
-	int n;
-	char sendline[BUF_SIZE], recvline[BUF_SIZE + 1];
-
-	while (fgets(sendline, BUF_SIZE, fp) != NULL)
-	{
-
-		/* ########################################
-
-
-		aqui é o vosso trabalho
-
-		##########################################*/
-
-		/* Envia string para sockfd. Note-se que o \0 não
-		   é enviado */
-
-		n = strlen(sendline);
-		if (writen(sockfd, sendline, n) != n)
-			err_dump("str_cli: writen error on socket");
-
-		/* Tenta ler string de sockfd. Note-se que tem de
-		   terminar a string com \0 */
-
-		n = readline(sockfd, recvline, BUF_SIZE);
-		if (n < 0)
-			err_dump("str_cli:readline error");
-		recvline[n] = 0;
-
-		/* Envia a string para stdout */
-
-		fputs(recvline, stdout);
-	}
-	if (ferror(fp))
-		err_dump("str_cli: error reading file");
-}
-void str_echo(int sockfd)
-{
-	int n, i;
-	char line[BUF_SIZE];
-
-	for (;;)
-	{
-
-		/* Lê uma linha do socket */
-
-		n = readline(sockfd, line, BUF_SIZE);
-		if (n == 0)
-			return;
-		else if (n < 0)
-			err_dump("str_echo: readline error");
-
-		/* ########################################
-
-
-		aqui é o vosso trabalho
-
-		##########################################*/
-
-		/* Manda linha de volta para o socket. n conta com
-		   o \0 da string, caso contrário perdia-se sempre
-		   um caracter! */
-		if (writen(sockfd, line, n) != n)
-			err_dump("str_echo: writen error");
-	}
 }

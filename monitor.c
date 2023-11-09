@@ -3,7 +3,7 @@
 #define CONFFILE "monitor.conf"
 #define REPFILE  "relatorio.txt"
 
-void atribuirConfiguracao(struct MonConfig *monConfiguration, char** results) {
+void atribuirConfiguracao(struct monConfig *monConfiguration, char** results) {
     monConfiguration->nomeParque = results[0];
     return;
 }
@@ -34,10 +34,6 @@ void ligacaoSocket() {
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, servlen) < 0)
 		err_dump("client: can't connect to server");
 
-	/* Envia as linhas lidas do teclado para o socket */
-
-	str_cli(stdin, sockfd);
-
 	/* Fecha o socket e termina */
 
 	close(sockfd);
@@ -54,7 +50,7 @@ void escreveRelatorio (char* phrase) {
 
 int main(int argc, char **argv) {
 
-    struct MonConfig monConfiguration;
+    struct monConfig monConfiguration;
     
     if (strcmp(argv[1], CONFFILE) != 0) {
         printf("Nome do ficheiro de configuracao incorreto. %s\n", argv[1]);
