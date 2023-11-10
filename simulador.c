@@ -6,6 +6,7 @@
 
 // GLOBAL VARIABLES
 int sockfd = 0;
+int newsockfd = 0;
 int idPessoa = 0;
 
 struct timeval tv;
@@ -53,8 +54,17 @@ void atribuirConfiguracao(struct simConfig *simConfiguration, char** results) {
     return;
 };
 
-void ligacaoSocket() {
-    int sockfd, newsockfd, clilen, childpid, servlen;
+void sendMessage(char* sendingMessage) {
+	 for (int i = 1; i <= 5; ++i) {
+        char message[BUF_SIZE];
+		printf("Estou a enviar a mensagem %d", i);
+        send(newsockfd, sendingMessage, strlen(sendingMessage), 0);
+        sleep(1); // Aguarda um segundo entre as mensagens
+    }
+}
+
+void serverCreation() {
+    int clilen, childpid, servlen;
 	struct sockaddr_un cli_addr, serv_addr;
 	
 	if ((sockfd = socket(AF_UNIX,SOCK_STREAM,0)) < 0)
@@ -84,6 +94,7 @@ void ligacaoSocket() {
 
 		else if (childpid == 0) {
 			close(sockfd);
+			sendMessage("Homem morreu");
 			exit(0);
 		}
 
@@ -97,16 +108,6 @@ int numeroAleatorio(int numeroMaximo,
     return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
 }
 
-void sendMessage(char* sendingMessage) {
-	int sizeMessage;
-    char mensagem[BUF_SIZE];
-    if (strcpy(mensagem, sendingMessage) != 0) {
-        sizeMessage = strlen(mensagem) + 1;
-        if (write(sockfd, mensagem, sizeMessage) != sizeMessage) {
-            printf("Erro no write!\n");
-        }
-    }
-}
 
 struct Pessoa Person() {
 
@@ -141,6 +142,7 @@ int main(int argc, char **argv) {
     }
     
     atribuirConfiguracao(&simConfiguration, carregarConfiguracao(argv[1]));
-	ligacaoSocket();
+	serverCreation();
+	
     return 0;
 };

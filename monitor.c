@@ -3,14 +3,28 @@
 #define CONFFILE "monitor.conf"
 #define REPFILE  "relatorio.txt"
 
+int sockfd = 0;
+
 void atribuirConfiguracao(struct monConfig *monConfiguration, char** results) {
     monConfiguration->nomeParque = results[0];
     return;
 }
 
+void readMessage() {
+	int size = 0;
+	char buffer[BUF_SIZE];
+	while ((size = recv(sockfd, buffer, BUF_SIZE, 0))) {
+		if (size > 0) {
+			buffer[size] = '\0';
+			printf("Mensagem recebida do servidor: %s\n", buffer);
+		}
+		
+	};
+}
+
 void ligacaoSocket() {
 
-    int sockfd, servlen;
+    int servlen;
 	struct sockaddr_un serv_addr;
 
 	/* Cria socket stream */
@@ -36,7 +50,7 @@ void ligacaoSocket() {
 
 	/* Fecha o socket e termina */
 
-	close(sockfd);
+	
 }
 
 void escreveRelatorio (char* phrase) {
@@ -60,5 +74,7 @@ int main(int argc, char **argv) {
     atribuirConfiguracao(&monConfiguration, carregarConfiguracao(argv[1]));
     escreveRelatorio(monConfiguration.nomeParque);
     ligacaoSocket();
+	readMessage();
+	close(sockfd);
     return 0;
 }
