@@ -20,6 +20,8 @@
 
 #define UNIXSTR_PATH "/tmp/s.2082021"
 
+bool simulacaoAtiva = true;
+
 struct simConfig {
     int tempoChegada;
     int simDias;

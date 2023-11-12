@@ -87,12 +87,19 @@ void escreveTitulo (char* phrase, FILE* report) {
 
 int simulacao() {
 	FILE* report = fopen(REPFILE, "w");
+	int i = 0;
 	escreveTitulo(monConfiguration.nomeParque, report);
-	for (int i = 0; i < 100; i++) {
+	while (simulacaoAtiva){
 		readMessage();
+		printf("%d", simulacaoAtiva);
+		if (i == 5) {
+			simulacaoAtiva = false;
+		}
+		i++;
 	}
 	
 	escreveRelatorio(report);
+	numPessoasParque = 0;
 	fclose(report);
 }
 

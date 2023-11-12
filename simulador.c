@@ -101,36 +101,39 @@ int numeroAleatorio(int numeroMaximo,
 }
 
 
-struct Pessoa Person() {
+// struct Pessoa Person() {
 
-	struct Pessoa person;
+// 	struct Pessoa person;
 
-	person.id = idPessoa;
-	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
-	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
+// 	person.id = idPessoa;
+// 	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
+// 	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
 
 	
-}
+// }
 
 void iniciarSimulacao() {
-	createPerson();
+	int i = 0;
+	while (simulacaoAtiva) {
+		createPerson();
+		sleep(1);
+		
+	}
+	
 }
 
-void *simulation() {
-	Person();
-}
+// void *simulation() {
+// 	Person();
+// }
 
 void createPerson() {
-
 	//pthread_t personThread;
-	
 	//pthread_create(&personThread, NULL, simulation, NULL);
+
 	sendMessage("1");
 }
 
 int main(int argc, char **argv) {
-
-    struct simConfig simConfiguration;
 
     if (strcmp(argv[1], CONFFILE) != 0) {
         printf("Nome do ficheiro de configuracao incorreto. %s\n", argv[1]);
