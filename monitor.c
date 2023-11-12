@@ -13,6 +13,18 @@ void atribuirConfiguracao(char** results) {
     return;
 }
 
+void trataMensagem(char *mensagem ) {
+	switch (atoi(mensagem))
+	{
+	case 1:
+		numPessoasParque++;
+		break;
+	
+	default:
+		break;
+	}
+}
+
 void readMessage() {
 	int size = 0;
 	char buffer[BUF_SIZE];
@@ -26,17 +38,6 @@ void readMessage() {
 		
 }
 
-void trataMensagem(char *mensagem ) {
-	switch (atoi(mensagem))
-	{
-	case 1:
-		numPessoasParque++;
-		break;
-	
-	default:
-		break;
-	}
-}
 
 void ligacaoSocket() {
 

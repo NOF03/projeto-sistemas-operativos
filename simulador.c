@@ -53,8 +53,45 @@ void atribuirConfiguracao(char** results) {
     return;
 };
 
+
+int numeroAleatorio(int numeroMaximo,
+                    int numeroMinimo) { // Retorna um numero aleatorio entre
+                                        // numero minimo e numero maximo
+    return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
+}
+
 void sendMessage(char* sendingMessage) {
 	send(newsockfd, sendingMessage, strlen(sendingMessage), 0);
+}
+struct Pessoa Person() {
+
+	struct Pessoa person;
+
+	person.id = idPessoa;
+	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
+	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
+
+	sendMessage("1");
+}
+
+
+void *simulation() {
+	Person();
+}
+
+void createPerson() {
+	pthread_t personThread;
+	pthread_create(&personThread, NULL, simulation, NULL);
+
+	pthread_join(personThread, NULL);
+}
+
+void iniciarSimulacao() {
+	int i = 0;
+	while (simulacaoAtiva) {
+		createPerson();	
+	}
+	
 }
 
 void serverCreation() {
@@ -92,45 +129,6 @@ void serverCreation() {
 
 	close(newsockfd);
 
-}
-
-int numeroAleatorio(int numeroMaximo,
-                    int numeroMinimo) { // Retorna um numero aleatorio entre
-                                        // numero minimo e numero maximo
-    return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
-}
-
-
-// struct Pessoa Person() {
-
-// 	struct Pessoa person;
-
-// 	person.id = idPessoa;
-// 	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
-// 	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
-
-	
-// }
-
-void iniciarSimulacao() {
-	int i = 0;
-	while (simulacaoAtiva) {
-		createPerson();
-		sleep(1);
-		
-	}
-	
-}
-
-// void *simulation() {
-// 	Person();
-// }
-
-void createPerson() {
-	//pthread_t personThread;
-	//pthread_create(&personThread, NULL, simulation, NULL);
-
-	sendMessage("1");
 }
 
 int main(int argc, char **argv) {
