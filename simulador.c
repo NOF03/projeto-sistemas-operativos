@@ -8,8 +8,7 @@
 int sockfd = 0;
 int newsockfd = 0;
 int idPessoa = 0;
-
-struct timeval tv;
+struct simConfig simConfiguration;
 
 struct Pessoa {
 	int id;
@@ -36,39 +35,34 @@ enum Sitios {
 	TICKETS
 };
 
-void atribuirConfiguracao(struct simConfig *simConfiguration, char** results) {
+void atribuirConfiguracao(char** results) {
 
-    simConfiguration->simDias = atoi(results[0]);
-    simConfiguration->tempoChegada = atoi(results[1]);
-	simConfiguration->tamMaxFilaAtracoes = atoi(results[2]);
-	simConfiguration->probSairFilaEntrada = strtof(results[3], NULL);
-	simConfiguration->probSairAtracoes = strtof(results[4], NULL);
-	simConfiguration->tobogansFunci = (strcmp(results[5], "Sim") > 0) ? true : false;
-	simConfiguration->piscinaFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
-	simConfiguration->pistasFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
-	simConfiguration->probSairSemUmaAtracao = strtof(results[8], NULL);
-	simConfiguration->lotEstacionamento = atoi(results[9]);
-	simConfiguration->lotParque = atoi(results[10]);
-	simConfiguration->probSairSemEstacionamento = strtof(results[11], NULL);
+    simConfiguration.simDias = atoi(results[0]);
+    simConfiguration.tempoChegada = atoi(results[1]);
+	simConfiguration.tamMaxFilaAtracoes = atoi(results[2]);
+	simConfiguration.probSairFilaEntrada = strtof(results[3], NULL);
+	simConfiguration.probSairAtracoes = strtof(results[4], NULL);
+	simConfiguration.tobogansFunci = (strcmp(results[5], "Sim") > 0) ? true : false;
+	simConfiguration.piscinaFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
+	simConfiguration.pistasFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
+	simConfiguration.probSairSemUmaAtracao = strtof(results[8], NULL);
+	simConfiguration.lotEstacionamento = atoi(results[9]);
+	simConfiguration.lotParque = atoi(results[10]);
+	simConfiguration.probSairSemEstacionamento = strtof(results[11], NULL);
 
     return;
 };
 
 void sendMessage(char* sendingMessage) {
-	 for (int i = 1; i <= 5; ++i) {
-        char message[BUF_SIZE];
-		printf("Estou a enviar a mensagem %d", i);
-        send(newsockfd, sendingMessage, strlen(sendingMessage), 0);
-        sleep(1); // Aguarda um segundo entre as mensagens
-    }
+	send(newsockfd, sendingMessage, strlen(sendingMessage), 0);
 }
 
 void serverCreation() {
     int clilen, childpid, servlen;
 	struct sockaddr_un cli_addr, serv_addr;
 	
-	if ((sockfd = socket(AF_UNIX,SOCK_STREAM,0)) < 0)
-		err_dump("server: can't open stream socket");
+	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+		printf("server: can't open stream socket");
 
 	bzero((char *)&serv_addr, sizeof(serv_addr));
 	serv_addr.sun_family = AF_UNIX;
@@ -77,29 +71,27 @@ void serverCreation() {
 	servlen = strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
 	unlink(UNIXSTR_PATH);
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, servlen) < 0)
-		err_dump("server, can't bind local address");
+		printf("server, can't bind local address");
 
+	printf("Esperando pelo monitor...\n");
 	listen(sockfd, 1);
 
-	for (;;) {
+	clilen = sizeof(cli_addr);
+	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,
+				&clilen);
+	if (newsockfd < 0)
+		printf("server: accept error");
 
-		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr,
-				   &clilen);
-		if (newsockfd < 0)
-			err_dump("server: accept error");
+	if ((childpid = fork()) < 0)
+		printf("server: fork error");
 
-		if ((childpid = fork()) < 0)
-			err_dump("server: fork error");
-
-		else if (childpid == 0) {
-			close(sockfd);
-			sendMessage("Homem morreu");
-			exit(0);
-		}
-
-		close(newsockfd);
+	else if (childpid == 0) {
+		close(sockfd);
+		iniciarSimulacao();
 	}
+
+	close(newsockfd);
+
 }
 
 int numeroAleatorio(int numeroMaximo,
@@ -120,16 +112,20 @@ struct Pessoa Person() {
 	
 }
 
+void iniciarSimulacao() {
+	createPerson();
+}
+
 void *simulation() {
 	Person();
 }
 
 void createPerson() {
 
-	pthread_t personThread;
+	//pthread_t personThread;
 	
-	pthread_create(&personThread, NULL, simulation, NULL);
-
+	//pthread_create(&personThread, NULL, simulation, NULL);
+	sendMessage("1");
 }
 
 int main(int argc, char **argv) {
@@ -138,10 +134,11 @@ int main(int argc, char **argv) {
 
     if (strcmp(argv[1], CONFFILE) != 0) {
         printf("Nome do ficheiro de configuracao incorreto. %s\n", argv[1]);
-        return 1;
+        return -1;
     }
     
-    atribuirConfiguracao(&simConfiguration, carregarConfiguracao(argv[1]));
+    atribuirConfiguracao(carregarConfiguracao(argv[1]));
+	
 	serverCreation();
 	
     return 0;

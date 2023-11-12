@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <regex.h>
+#include <time.h>
 #include <stdbool.h>
 
 #define BUF_SIZE 512

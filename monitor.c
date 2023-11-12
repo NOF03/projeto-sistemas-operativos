@@ -3,23 +3,39 @@
 #define CONFFILE "monitor.conf"
 #define REPFILE  "relatorio.txt"
 
-int sockfd = 0;
 
-void atribuirConfiguracao(struct monConfig *monConfiguration, char** results) {
-    monConfiguration->nomeParque = results[0];
+struct monConfig monConfiguration;
+int sockfd = 0;
+int numPessoasMortas = 0, numPessoasParque = 0;
+
+void atribuirConfiguracao(char** results) {
+    monConfiguration.nomeParque = results[0];
     return;
 }
 
 void readMessage() {
 	int size = 0;
 	char buffer[BUF_SIZE];
-	while ((size = recv(sockfd, buffer, BUF_SIZE, 0))) {
-		if (size > 0) {
-			buffer[size] = '\0';
-			printf("Mensagem recebida do servidor: %s\n", buffer);
-		}
+	size = recv(sockfd, buffer, BUF_SIZE, 0);
+	if (size > 0) {
+		buffer[size] = '\0';
+		printf("Mensagem recebida do servidor: %s\n", buffer);
+		trataMensagem(buffer);
+		printf("%d", numPessoasParque);
+	}
 		
-	};
+}
+
+void trataMensagem(char *mensagem ) {
+	switch (atoi(mensagem))
+	{
+	case 1:
+		numPessoasParque++;
+		break;
+	
+	default:
+		break;
+	}
 }
 
 void ligacaoSocket() {
@@ -30,7 +46,7 @@ void ligacaoSocket() {
 	/* Cria socket stream */
 
 	if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		err_dump("client: can't open stream socket");
+		printf("client: can't open stream socket");
 
 	/* Primeiro uma limpeza preventiva!
 	   Dados para o socket stream: tipo + nome do ficheiro.
@@ -46,35 +62,67 @@ void ligacaoSocket() {
 		 o socket ao ficheiro) */
 
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, servlen) < 0)
-		err_dump("client: can't connect to server");
+		printf("client: can't connect to server");
 
 	/* Fecha o socket e termina */
 
 	
 }
 
-void escreveRelatorio (char* phrase) {
-    FILE* report = fopen(REPFILE, "w");
+void escreveRelatorio(FILE* report) {
+	fprintf(report, "\nNumero de pessoas que entraram no Parque: %d", numPessoasParque);
+}
+
+void escreveTitulo (char* phrase, FILE* report) {
+	struct tm *data_hora_atual; 
+	time_t segundos;
+	time(&segundos);   
+	data_hora_atual = localtime(&segundos);  
 
     fprintf(report, "--------------------------------");
-    fprintf(report, "\nBem vindo ao %s", phrase);
+    fprintf(report, "\nRELATORIO DO %s A %d/%d", phrase, data_hora_atual->tm_mday, data_hora_atual->tm_mon);
     fprintf(report, "\n--------------------------------");
-    fclose(report);
+	
+}
+
+int simulacao() {
+	FILE* report = fopen(REPFILE, "w");
+	escreveTitulo(monConfiguration.nomeParque, report);
+	for (int i = 0; i < 100; i++) {
+		readMessage();
+	}
+	
+	escreveRelatorio(report);
+	fclose(report);
 }
 
 int main(int argc, char **argv) {
-
-    struct monConfig monConfiguration;
     
     if (strcmp(argv[1], CONFFILE) != 0) {
         printf("Nome do ficheiro de configuracao incorreto. %s\n", argv[1]);
         return 1;
     }
 
-    atribuirConfiguracao(&monConfiguration, carregarConfiguracao(argv[1]));
-    escreveRelatorio(monConfiguration.nomeParque);
-    ligacaoSocket();
-	readMessage();
-	close(sockfd);
+	int opcao;
+
+	for (;;) {
+		printf("++++++++++++ Bem vindo ++++++++++++\n");
+    	printf("1: Comecar simulacao\n");
+		
+		scanf("%d", &opcao);
+
+		switch (opcao) {
+		case 1:
+			atribuirConfiguracao(carregarConfiguracao(argv[1]));
+			ligacaoSocket();
+			simulacao();
+			close(sockfd);
+			break;
+		
+		default:
+			return 0;
+		}
+	}
+	
     return 0;
 }
