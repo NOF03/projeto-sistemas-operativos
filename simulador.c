@@ -82,14 +82,17 @@ void *simulation() {
 void createPerson() {
 	pthread_t personThread;
 	pthread_create(&personThread, NULL, simulation, NULL);
-
 	pthread_join(personThread, NULL);
 }
 
 void iniciarSimulacao() {
 	int i = 0;
+
 	while (simulacaoAtiva) {
 		createPerson();	
+		i++;
+		printf("Pessoa criada: %d", i);
+
 	}
 	
 }

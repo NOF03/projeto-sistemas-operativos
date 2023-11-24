@@ -121,6 +121,7 @@ int main(int argc, char **argv) {
 
 		switch (opcao) {
 		case 1:
+			simulacaoAtiva = true;
 			atribuirConfiguracao(carregarConfiguracao(argv[1]));
 			ligacaoSocket();
 			simulacao();
