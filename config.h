@@ -18,9 +18,11 @@
 #define FALSE 0
 #define TRUE 1
 
+#define THREAD_SIZE 50000
+
 #define UNIXSTR_PATH "/tmp/s.2082021"
 
-bool simulacaoAtiva = true;
+
 
 struct simConfig {
     int tempoChegada;
