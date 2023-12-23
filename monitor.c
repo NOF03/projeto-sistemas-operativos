@@ -88,7 +88,7 @@ void escreveTitulo(char *phrase, FILE *report)
 	data_hora_atual = localtime(&segundos);
 
 	fprintf(report, "--------------------------------");
-	fprintf(report, "\nRELATORIO DO %s A %d/%d", phrase, data_hora_atual->tm_mday, data_hora_atual->tm_mon);
+	fprintf(report, "\nRELATORIO DO %s A %d/%d", phrase, data_hora_atual->tm_mday, data_hora_atual->tm_mon + 1);
 	fprintf(report, "\n--------------------------------");
 }
 

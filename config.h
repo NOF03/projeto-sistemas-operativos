@@ -22,7 +22,14 @@
 
 #define UNIXSTR_PATH "/tmp/s.2082021"
 
-
+#define RESET "\x1B[0m"
+#define VERMELHO "\x1B[31m"
+#define VERDE "\x1B[32m"
+#define AMARELO "\x1B[33m"
+#define AZUL "\x1B[34m"
+#define MAGENTA "\x1B[35m"
+#define CIANO "\x1B[36m"
+#define BRANCO "\x1B[37m"
 
 struct simConfig {
     int tempoChegada;

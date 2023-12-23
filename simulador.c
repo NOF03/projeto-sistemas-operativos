@@ -8,17 +8,27 @@
 int sockfd = 0;
 int newsockfd = 0;
 int idPessoa = 0;
+int minutosDecorridos = 0;
 struct simConfig simConfiguration;
 
 pthread_t IDthread[THREAD_SIZE];
+
 struct Person *createdPeople[THREAD_SIZE];
+struct Parque *Parque;
 
 struct Person
 {
 	int id;
+	int numeroPessoasAFrenteParaDesistir;
 	bool prioritario;
 	bool membroVip;
 	bool noParque;
+	bool desistiu;
+};
+
+struct Parque
+{
+	int numeroPessoaEspera;
 };
 
 enum Diversao
@@ -41,6 +51,11 @@ enum Sitios
 	TICKETS
 };
 
+//TRINCOS E SEMAFOROS
+pthread_mutex_t mutexCriarPessoa;
+pthread_mutex_t mutexVariaveisCentros;
+
+
 void atribuirConfiguracao(char **results)
 {
 
@@ -60,10 +75,8 @@ void atribuirConfiguracao(char **results)
 	return;
 };
 
-int numeroAleatorio(int numeroMaximo,
-					int numeroMinimo)
-{ // Retorna um numero aleatorio entre
-  // numero minimo e numero maximo
+int numeroAleatorio(int numeroMaximo, int numeroMinimo)
+{
 	return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
 }
 
@@ -79,13 +92,33 @@ struct Person createPerson()
 	person.id = idPessoa;
 	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
 	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
+	person.noParque = false;
+	person.desistiu = false;
 	printf("Pessoa criada\n");
 
 	sendMessage("1");
 }
 
-void waitingList()
+void WaitingList(struct Person *pessoa)
 {
+	char mensagem[BUF_SIZE];
+	long timeStamp = minutosDecorridos;
+	int index, tempoEspera;
+	int valorSemaforo;
+	if (!pessoa->noParque)
+	{
+		pthread_mutex_lock(&mutexVariaveisCentros);
+		int pessoasNaFila = Parque->numeroPessoaEspera;
+		pthread_mutex_unlock(&mutexVariaveisCentros);
+		if (pessoasNaFila < simConfiguration.lotParque) {
+			if (pessoa->numeroPessoasAFrenteParaDesistir < pessoasNaFila) {
+				printf (VERMELHO "%s desistiu da fila do parque porque tinha muita gente a frente. \n");
+				pessoa->desistiu = TRUE;
+			} else {
+
+			}
+		}
+	}
 }
 
 void startSemaphoresAndLatches()
@@ -105,7 +138,10 @@ void Person()
 
 	while (TRUE)
 	{
-		waitingList(&onePerson);
+		WaitingList(&onePerson);
+		if (!onePerson.desistiu) {
+			
+		}
 	}
 }
 
