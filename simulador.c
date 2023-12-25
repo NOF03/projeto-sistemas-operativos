@@ -1,6 +1,4 @@
 #include "config.h"
-#include <pthread.h>
-#include <time.h>
 
 #define CONFFILE "simulador.conf"
 
@@ -14,16 +12,19 @@ struct simConfig simConfiguration;
 pthread_t IDthread[THREAD_SIZE];
 
 struct Person *createdPeople[THREAD_SIZE];
-struct Parque *Parque;
+struct Parque parque;
 
 struct Person
 {
 	int id;
 	int numeroPessoasAFrenteParaDesistir;
+	int tempoChegadaFilaEspera;
+	int tempoMaximoEspera;
 	bool prioritario;
 	bool membroVip;
 	bool noParque;
 	bool desistiu;
+	sem_t semaforoPessoa;
 };
 
 struct Parque
@@ -46,15 +47,16 @@ enum Sitios
 	RESTAURANTE,
 	CACIFOS,
 	CABANAS,
-	PARQUE,
-	ENFERMARIA,
-	TICKETS
+	ESTACIONAMENTO,
+	TICKETS,
+	ENFERMARIA
 };
 
-//TRINCOS E SEMAFOROS
+// TRINCOS E SEMAFOROS
 pthread_mutex_t mutexCriarPessoa;
-pthread_mutex_t mutexVariaveisCentros;
-
+pthread_mutex_t mutexPessoasParque;
+pthread_mutex_t sendMessageThread;
+sem_t semCriarPessoa;
 
 void atribuirConfiguracao(char **results)
 {
@@ -75,14 +77,42 @@ void atribuirConfiguracao(char **results)
 	return;
 };
 
+void startSemaphoresAndLatches()
+{
+	if (pthread_mutex_init(&mutexCriarPessoa, NULL) != 0)
+	{
+		printf(VERMELHO "Inicialização do trinco de criar pessoas falhou!.\n");
+	}
+	if (pthread_mutex_init(&sendMessageThread, NULL) != 0)
+	{
+		printf(VERMELHO "Inicialização do trinco de criar pessoas falhou!.\n");
+	}
+
+	if (pthread_mutex_init(&mutexPessoasParque, NULL) != 0) 
+	{
+		printf(VERMELHO "Inicialização do trinco de criar pessoas falhou!.\n");
+	}
+
+	sem_init(&mutexMensagens, 0, 1);
+	sem_init(&semCriarPessoa, 0, 1);
+}
+
 int numeroAleatorio(int numeroMaximo, int numeroMinimo)
 {
 	return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
 }
 
+long long current_timestamp()
+{
+	struct timeval te;
+	gettimeofday(&te, NULL);										 // get current time
+	long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // calculate milliseconds
+	return milliseconds;
+}
+
 void sendMessage(char *sendingMessage)
 {
-	send(newsockfd, sendingMessage, strlen(sendingMessage), 0);
+	write(newsockfd, sendingMessage, strlen(sendingMessage));
 }
 struct Person createPerson()
 {
@@ -92,11 +122,14 @@ struct Person createPerson()
 	person.id = idPessoa;
 	person.membroVip = numeroAleatorio(1, 0) == 0 ? false : true;
 	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
+	person.numeroPessoasAFrenteParaDesistir = numeroAleatorio(simConfiguration.lotParque, (simConfiguration.lotParque * 3) / 4);
 	person.noParque = false;
 	person.desistiu = false;
-	printf("Pessoa criada\n");
+	sem_wait(&semCriarPessoa);
+	idPessoa++;
+	sem_post(&semCriarPessoa);
 
-	sendMessage("1");
+	return person;
 }
 
 void WaitingList(struct Person *pessoa)
@@ -107,42 +140,65 @@ void WaitingList(struct Person *pessoa)
 	int valorSemaforo;
 	if (!pessoa->noParque)
 	{
-		pthread_mutex_lock(&mutexVariaveisCentros);
-		int pessoasNaFila = Parque->numeroPessoaEspera;
-		pthread_mutex_unlock(&mutexVariaveisCentros);
-		if (pessoasNaFila < simConfiguration.lotParque) {
-			if (pessoa->numeroPessoasAFrenteParaDesistir < pessoasNaFila) {
-				printf (VERMELHO "%s desistiu da fila do parque porque tinha muita gente a frente. \n");
+		pthread_mutex_lock(&mutexPessoasParque);
+		int pessoasNaFila = parque.numeroPessoaEspera;
+		pthread_mutex_unlock(&mutexPessoasParque);	
+		if (pessoasNaFila < simConfiguration.lotParque)
+		{
+			if (pessoa->numeroPessoasAFrenteParaDesistir < pessoasNaFila)
+			{
+				printf(VERMELHO "%d desistiu da fila do parque porque tinha muita gente a frente. \n", pessoa->id);
 				pessoa->desistiu = TRUE;
-			} else {
-
+			}
+			else
+			{
+				pessoa->tempoChegadaFilaEspera = timeStamp;
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoaEspera++;
+				pthread_mutex_unlock(&mutexPessoasParque);
 			}
 		}
 	}
 }
 
-void startSemaphoresAndLatches()
+void *Person()
 {
+	struct Person onePerson = createPerson();
+	createdPeople[onePerson.id] = &onePerson;
+	char buffer[BUF_SIZE];
+	printf(VERDE "Pessoa criada %d\n", onePerson.id);
+	sendMessage("1");
+	while (TRUE)
+	{
+
+		WaitingList(&onePerson);
+		if (!onePerson.desistiu)
+		{
+		}
+		break;
+	}
 }
 
 void Simulation()
 {
 	srand(time(NULL));
-}
-
-void Person()
-{
-	struct Person onePerson = createPerson();
-	createdPeople[onePerson.id] = &onePerson;
+	startSemaphoresAndLatches();
 	char buffer[BUF_SIZE];
+	int lastTimeStamp = current_timestamp();
+	int auxTimeStamp, numeroDia = 1;
+	int tempoLimite = simConfiguration.simDias * DIA;
+	int idx;
+	char sendingMessage[BUF_SIZE];
 
-	while (TRUE)
+	for (idx = 0; idx < simConfiguration.lotParque; idx++)
 	{
-		WaitingList(&onePerson);
-		if (!onePerson.desistiu) {
-			
+		if (pthread_create(&IDthread[idPessoa], NULL, Person, NULL))
+		{
+			printf("Erro na criação da tarefa \n");
+			exit(1);
 		}
 	}
+	sendMessage("2");
 }
 
 void serverCreation()
@@ -179,7 +235,6 @@ void serverCreation()
 		close(sockfd);
 		Simulation();
 	}
-
 	close(newsockfd);
 }
 
@@ -195,6 +250,5 @@ int main(int argc, char **argv)
 	atribuirConfiguracao(carregarConfiguracao(argv[1]));
 
 	serverCreation();
-
 	return 0;
 };

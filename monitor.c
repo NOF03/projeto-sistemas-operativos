@@ -14,14 +14,18 @@ void atribuirConfiguracao(char **results)
 	return;
 }
 
-void trataMensagem(char *mensagem)
+void trataMensagem(int mensagem)
 {
-	switch (atoi(mensagem))
-	{
-	case 1:
-		numPessoasParque++;
-		break;
 
+	switch (mensagem)
+	{
+	case 49:
+		numPessoasParque++;
+		printf("Pessoas no parque: %d\n", numPessoasParque);
+		break;
+	case 50:
+		simulacaoAtiva = FALSE;
+		break;
 	default:
 		break;
 	}
@@ -31,12 +35,23 @@ void readMessage()
 {
 	int size = 0;
 	char buffer[BUF_SIZE];
-	size = recv(sockfd, buffer, BUF_SIZE, 0);
-	if (size > 0)
+	size = read(sockfd, buffer, BUF_SIZE);
+	if (size == 0)
+	{
+		return;
+	}
+	else if (size > 0)
 	{
 		buffer[size] = '\0';
-		printf("Mensagem recebida do servidor: %s\n", buffer);
-		trataMensagem(buffer);
+		for (int i = 0; i < size; i++)
+		{
+			printf("Mensagem recebida do servidor: %d\n", buffer[i]);
+			trataMensagem(buffer[i]);
+		}
+	}
+	else
+	{
+		printf("Erro: Nao leu do socket \n");
 	}
 }
 
@@ -94,19 +109,15 @@ void escreveTitulo(char *phrase, FILE *report)
 
 int simulacao()
 {
-	FILE *report = fopen(REPFILE, "w");
 
-	escreveTitulo(monConfiguration.nomeParque, report);
 	int i = 0;
 	while (simulacaoAtiva)
 	{
 		readMessage();
-		if (i == 5)
-		{
-			simulacaoAtiva = FALSE;
-		}
-		i++;
 	}
+	FILE *report = fopen(REPFILE, "w");
+
+	escreveTitulo(monConfiguration.nomeParque, report);
 
 	escreveRelatorio(report);
 	numPessoasParque = 0;

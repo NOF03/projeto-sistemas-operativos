@@ -6,11 +6,17 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <string.h>
 #include <regex.h>
 #include <time.h>
+#include <ctype.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <time.h>
+#include <semaphore.h>
+
 
 #define BUF_SIZE 512
 #define STDIN 0
@@ -31,6 +37,10 @@
 #define CIANO "\x1B[36m"
 #define BRANCO "\x1B[37m"
 
+#define MINUTO 42        // em milisegundos
+#define HORA 42 * 60     // em milisegundos
+#define DIA 42 * 60 * 24 // em milisegundos
+
 struct simConfig {
     int tempoChegada;
     int simDias;
@@ -49,6 +59,8 @@ struct simConfig {
 struct monConfig {
     char* nomeParque;
 };
+
+sem_t mutexMensagens;
 
 char** carregarConfiguracao(char* filename) {
 
