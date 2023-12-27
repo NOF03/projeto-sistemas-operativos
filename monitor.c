@@ -5,7 +5,7 @@
 
 struct monConfig monConfiguration;
 int sockfd = 0;
-int numPessoasMortas = 0, numPessoasParque = 0;
+int numPessoasMortas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0;
 bool simulacaoAtiva = TRUE;
 
 void atribuirConfiguracao(char **results)
@@ -20,15 +20,47 @@ void trataMensagem(int mensagem)
 	switch (mensagem)
 	{
 	case 49:
-		numPessoasParque++;
-		printf("Pessoas no parque: %d\n", numPessoasParque);
+		numPessoasQueriamEntrarParque++;
 		break;
 	case 50:
+		numPessoasQueriamEntrarParque--;
+		break;
+	case 51:
+		numPessoasEstacionamento++;
+		break;
+	case 52:
+		numPessoasEstacionamento--;
+		break;
+	case 53:
+		numPessoasFilaParque++;
+		break;
+	case 54:
+		numPessoasFilaParque--;
+		break;
+	case 55:
+		numPessoasFilaEstacionamento++;
+		break;
+	case 56:
+		numPessoasFilaEstacionamento--;
+		break;
+	case 57:
+		numPessoasParque++;
+		break;
+	case 58:
+		numPessoasParque--;
+		break;
+	case 65:
 		simulacaoAtiva = FALSE;
 		break;
 	default:
 		break;
 	}
+	printf("Estado atual => Simulacao a decorrer!\n");
+	printf("Pessoas que queriam entrar no parque: %d\n", numPessoasQueriamEntrarParque);
+	printf("Pessoas na fila de espera do parque: %d\n", numPessoasFilaParque);
+	printf("Pessoas na fila de espera do estacionamento: %d\n", numPessoasFilaEstacionamento);
+	printf("Pessoas no estacionamento do parque: %d\n", numPessoasEstacionamento);
+	printf("Pessoas no parque: %d\n", numPessoasParque);
 }
 
 void readMessage()
@@ -45,7 +77,7 @@ void readMessage()
 		buffer[size] = '\0';
 		for (int i = 0; i < size; i++)
 		{
-			printf("Mensagem recebida do servidor: %d\n", buffer[i]);
+			//printf("Mensagem recebida do servidor: %d\n", buffer[i]);
 			trataMensagem(buffer[i]);
 		}
 	}

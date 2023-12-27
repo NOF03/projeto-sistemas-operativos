@@ -42,7 +42,7 @@
 #define DIA 42 * 60 * 24 // em milisegundos
 
 struct simConfig {
-    int tempoChegada;
+    int tempoMedioDeEspera;
     int simDias;
 	int tamMaxFilaAtracoes;
 	float probSairFilaEntrada;
@@ -54,6 +54,7 @@ struct simConfig {
 	int lotEstacionamento;
 	int lotParque;
 	float probSairSemEstacionamento;
+    
 };
 
 struct monConfig {
