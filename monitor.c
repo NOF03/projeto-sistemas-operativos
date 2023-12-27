@@ -77,7 +77,7 @@ void readMessage()
 		buffer[size] = '\0';
 		for (int i = 0; i < size; i++)
 		{
-			//printf("Mensagem recebida do servidor: %d\n", buffer[i]);
+			// printf("Mensagem recebida do servidor: %d\n", buffer[i]);
 			trataMensagem(buffer[i]);
 		}
 	}

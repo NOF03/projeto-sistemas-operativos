@@ -39,11 +39,18 @@ struct Parque
 	sem_t filaEstacionamento;
 	int numeroEntradaDisponivel;
 	int numeroEstacionamentoDisponivel;
+	sem_t filaSitios[BUF_SIZE];
 };
 
-enum Diversao
+
+enum Sitios
 {
-	NENHUMA,
+	NENHUM,
+	BALNEARIOS,
+	CACIFOS,
+	RESTAURANTE,
+	CABANAS,
+	ENFERMARIA,
 	PISTASRAPIDAS,
 	TOBOGAN,
 	PISCINA,
@@ -51,25 +58,12 @@ enum Diversao
 	ESCORREGA
 };
 
-enum Sitios
-{
-	NENHUM,
-	BALNEARIOS,
-	RESTAURANTE,
-	CACIFOS,
-	CABANAS,
-	ESTACIONAMENTO,
-	TICKETS,
-	ENFERMARIA
-};
-
 // TRINCOS E SEMAFOROS
 pthread_mutex_t mutexCriarPessoa;
 pthread_mutex_t mutexPessoasParque;
 pthread_mutex_t mutexPessoasEstacionamento;
-sem_t semCriarPessoa;
-
 pthread_mutex_t mutexVariaveisSimulacao;
+sem_t semCriarPessoa;
 
 void atribuirConfiguracao(char **results)
 {
@@ -115,6 +109,11 @@ void startSemaphoresAndLatches()
 	parque.numeroPessoaEsperaNoEstacionamento = 0;
 	parque.numeroPessoasNoEstacionamento = 0;
 	parque.numeroPessoasNoParque = 0;
+
+	for (int i = 0; i < BUF_SIZE; i++)
+	{
+		sem_init(&parque.filaSitios[i], 0, 1);
+	}
 }
 
 int numeroAleatorio(int numeroMaximo, int numeroMinimo)
@@ -130,6 +129,11 @@ long long current_timestamp()
 	return milliseconds;
 }
 
+char *distinguirPrioritario(struct Person *person)
+{
+	return (person->prioritario) ? "PRIORITÁRIO" : "";
+}
+
 void sendMessage(char *sendingMessage)
 {
 	write(newsockfd, sendingMessage, strlen(sendingMessage));
@@ -137,7 +141,7 @@ void sendMessage(char *sendingMessage)
 
 void WaitingListParking(struct Person *pessoa)
 {
-	char mensagem[BUF_SIZE];
+	char mensagem[BUF_SIZE] = "";
 	int index, tempoEspera;
 	int valorSemaforo;
 	if (pessoa->precisaEstacionamento)
@@ -165,12 +169,15 @@ void WaitingListParking(struct Person *pessoa)
 					pthread_mutex_lock(&mutexVariaveisSimulacao);
 					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
 					pthread_mutex_unlock(&mutexVariaveisSimulacao);
+
 					while (tempoEspera <= pessoa->tempoMaximoEspera && parque.numeroPessoasNoEstacionamento >= simConfiguration.lotEstacionamento)
 					{
 						pthread_mutex_lock(&mutexVariaveisSimulacao);
 						tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
 						pthread_mutex_unlock(&mutexVariaveisSimulacao);
+						strcpy(mensagem, "ESTACIONAMENTO CHEIO.");
 					};
+
 					if (tempoEspera > pessoa->tempoMaximoEspera)
 					{
 
@@ -179,7 +186,7 @@ void WaitingListParking(struct Person *pessoa)
 						parque.numeroPessoaEsperaNoEstacionamento--;
 						sem_post(&parque.filaEstacionamento);
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
-						printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera no estacionamento.\n", pessoa->id);
+						printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera no estacionamento. %s\n", pessoa->id, mensagem);
 						sendMessage("8");
 					}
 					else
@@ -222,67 +229,81 @@ void WaitingListWaterPark(struct Person *pessoa)
 		pthread_mutex_unlock(&mutexPessoasParque);
 		if (pessoasNoParque < simConfiguration.lotParque)
 		{
-			if (numeroAleatorio(100, 0) < simConfiguration.probSairFilaEntrada * parque.numeroPessoaEspera)
+			if (!pessoa->prioritario)
 			{
-				printf(VERMELHO "O visitante %d desistiu. Muita gente a sua frente na fila.\n", pessoa->id);
-				pessoa->desistiu = TRUE;
-				if (pessoa->noEstacionamento)
+				if (numeroAleatorio(100, 0) < simConfiguration.probSairFilaEntrada * parque.numeroPessoaEspera)
 				{
-					sendMessage("4");
-					pthread_mutex_lock(&mutexPessoasParque);
-					parque.numeroPessoasNoEstacionamento--;
-					pthread_mutex_unlock(&mutexPessoasParque);
+					printf(VERMELHO "O visitante %d desistiu. Muita gente a sua frente na fila.\n", pessoa->id);
+					pessoa->desistiu = TRUE;
+					if (pessoa->noEstacionamento)
+					{
+						sendMessage("4");
+						pthread_mutex_lock(&mutexPessoasParque);
+						parque.numeroPessoasNoEstacionamento--;
+						pthread_mutex_unlock(&mutexPessoasParque);
+					}
 				}
-			}
-			else
-			{
-				pessoa->tempoChegadaFilaEspera = current_timestamp();
-				pthread_mutex_lock(&mutexPessoasParque);
-				parque.numeroPessoaEspera++;
-				pthread_mutex_unlock(&mutexPessoasParque);
-				sendMessage("5");
-				sem_wait(&parque.filaParque);
-				pthread_mutex_lock(&mutexVariaveisSimulacao);
-				tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
-				pthread_mutex_unlock(&mutexVariaveisSimulacao);
-
-				while (tempoEspera <= pessoa->tempoMaximoEspera && parque.numeroPessoasNoParque >= simConfiguration.lotParque)
+				else
+				{
+					pessoa->tempoChegadaFilaEspera = current_timestamp();
+					pthread_mutex_lock(&mutexPessoasParque);
+					parque.numeroPessoaEspera++;
+					pthread_mutex_unlock(&mutexPessoasParque);
+					sendMessage("5");
+					sem_wait(&parque.filaParque);
+					pthread_mutex_lock(&mutexVariaveisSimulacao);
+					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
+					pthread_mutex_unlock(&mutexVariaveisSimulacao);
+					while (tempoEspera <= pessoa->tempoMaximoEspera && parque.numeroPessoasNoParque >= simConfiguration.lotParque)
 					{
 						pthread_mutex_lock(&mutexVariaveisSimulacao);
 						tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
 						pthread_mutex_unlock(&mutexVariaveisSimulacao);
 						strcpy(mensagem, "PARQUE CHEIO.");
 					};
-				if (tempoEspera > pessoa->tempoMaximoEspera)
-				{
-					pessoa->desistiu = TRUE;
-					pthread_mutex_lock(&mutexPessoasParque);
-					parque.numeroPessoaEspera--;
-					sem_post(&parque.filaParque);
-					pthread_mutex_unlock(&mutexPessoasParque);
-					printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera. %s\n", pessoa->id, mensagem);
-					sendMessage("6");
+					if (tempoEspera > pessoa->tempoMaximoEspera)
+					{
+						pessoa->desistiu = TRUE;
+						pthread_mutex_lock(&mutexPessoasParque);
+						parque.numeroPessoaEspera--;
+						sem_post(&parque.filaParque);
+						pthread_mutex_unlock(&mutexPessoasParque);
+						printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera. %s\n", pessoa->id, mensagem);
+						sendMessage("6");
+					}
+					else
+					{
+						pessoa->noParque = TRUE;
+						sendMessage("6");
+						sendMessage("9");
+						printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
+						pthread_mutex_lock(&mutexPessoasParque);
+						parque.numeroPessoaEspera--;
+						parque.numeroPessoasNoParque++;
+						pthread_mutex_unlock(&mutexPessoasParque);
+						sem_post(&parque.filaParque);
+					}
 				}
-				else
-				{
-					pessoa->noParque = TRUE;
-					sendMessage("9");
-					sendMessage("6");
-					printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
-					pthread_mutex_lock(&mutexPessoasParque);
-					parque.numeroPessoaEspera--;
-					parque.numeroPessoasNoParque++;
-					pthread_mutex_unlock(&mutexPessoasParque);
-					sem_post(&parque.filaParque);
-				}
+			}
+			else
+			{
+				pessoa->noParque = TRUE;
+				sendMessage("9");
+				printf(VERDE "O visitante PRIORITÁRIO %d entrou no parque.\n", pessoa->id);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque++;
+				pthread_mutex_unlock(&mutexPessoasParque);
 			}
 		}
 		else
 		{
-			pthread_mutex_unlock(&mutexPessoasParque);
 			pessoa->desistiu = TRUE;
 		}
 	}
+}
+
+void UsePark()
+{
 }
 
 struct Person createPerson()
@@ -290,17 +311,16 @@ struct Person createPerson()
 	struct Person person;
 
 	person.id = idPessoa;
-	person.prioritario = numeroAleatorio(1, 0) == 0 ? false : true;
-	person.precisaEstacionamento = numeroAleatorio(1, 0) == 0 ? false : true;
+	person.prioritario = numeroAleatorio(10, 0) == 0 ? true : false;
+	person.precisaEstacionamento = numeroAleatorio(1, 0) == 0 ? true : false;
 	person.noParque = false;
 	person.noEstacionamento = false;
 	person.desistiu = false;
-	person.diversao = 0;
-	person.sitio = 0;
+	person.sitio = NENHUM;
 	person.tempoMaximoEspera = numeroAleatorio(simConfiguration.tempoMedioDeEspera, (simConfiguration.tempoMedioDeEspera * 3) / 4);
-	sem_wait(&semCriarPessoa);
+	pthread_mutex_lock(&mutexCriarPessoa);
 	idPessoa++;
-	sem_post(&semCriarPessoa);
+	pthread_mutex_unlock(&mutexCriarPessoa);
 
 	return person;
 }
@@ -338,7 +358,7 @@ void Simulation()
 	int idx;
 	char sendingMessage[BUF_SIZE];
 
-	for (idx = 0; idx < 300; idx++)
+	for (idx = 0; idx < numeroAleatorio(1000, 700); idx++)
 	{
 		if (pthread_create(&IDthread[idPessoa], NULL, Person, NULL))
 		{
