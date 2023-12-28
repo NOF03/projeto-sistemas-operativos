@@ -31,6 +31,8 @@ struct Person
 	bool alugouCacifo;
 };
 
+bool pistasRapidasEmAndamento;
+
 struct Parque
 {
 	int numeroPessoaEspera;
@@ -85,11 +87,13 @@ void atribuirConfiguracao(char **results)
 	simConfiguration.tobogansFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
 	simConfiguration.piscinaFunci = (strcmp(results[8], "Sim") > 0) ? true : false;
 	simConfiguration.pistasFunci = (strcmp(results[9], "Sim") > 0) ? true : false;
-	simConfiguration.probEntrarNumaAtracao = strtof(results[10], NULL);
-	simConfiguration.probSairSemUmaAtracao = strtof(results[11], NULL);
-	simConfiguration.lotEstacionamento = atoi(results[12]);
-	simConfiguration.lotParque = atoi(results[13]);
-	simConfiguration.probSairSemEstacionamento = strtof(results[14], NULL);
+	simConfiguration.escorregaFunci = (strcmp(results[10], "Sim") > 0) ? true : false;
+	simConfiguration.rioLentoFunci = (strcmp(results[11], "Sim") > 0) ? true : false;
+	simConfiguration.probEntrarNumaAtracao = strtof(results[12], NULL);
+	simConfiguration.probSairSemUmaAtracao = strtof(results[13], NULL);
+	simConfiguration.lotEstacionamento = atoi(results[14]);
+	simConfiguration.lotParque = atoi(results[15]);
+	simConfiguration.probSairSemEstacionamento = strtof(results[16], NULL);
 
 	return;
 };
@@ -137,17 +141,7 @@ void startSemaphoresAndLatches()
 	sem_init(&parque.filaSitios[PISCINA], 0, simConfiguration.capAtracoes);
 	sem_init(&parque.filaSitios[ESCORREGA], 0, 1);
 
-	for (int i = 0; i < TOTAL; i++)
-	{
-		if (i == PISTASRAPIDAS)
-		{
-			sem_init(&parque.filaSitios[i], 0, 4);
-		}
-		else
-		{
-			sem_init(&parque.filaSitios[i], 0, 1);
-		}
-	}
+	pistasRapidasEmAndamento = false;
 }
 
 int numeroAleatorio(int numeroMaximo, int numeroMinimo)
@@ -194,17 +188,18 @@ void UsePark(struct Person *pessoa)
 		pessoa->alugouCacifo = true;
 	}
 
-	if (pessoa->sitio == NENHUM)
+	switch (pessoa->sitio)
 	{
+	case NENHUM:
+	case TOBOGAN:
 		if (simConfiguration.tobogansFunci)
 		{
 			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
 			{
-
+				pessoa->sitio = TOBOGAN;
 				sem_wait(&parque.filaSitios[TOBOGAN]);
-				printf(AMARELO "O visitante %d entrou dos TOBOGANS.\n" RESET, pessoa->id);
+				printf(AMARELO "O visitante %d divertiu-se nos TOBOGANS.\n" RESET, pessoa->id);
 				sendMessage("C");
-				printf(AMARELO "O visitante %d saiu dos TOBOGANS.\n" RESET, pessoa->id);
 				sem_post(&parque.filaSitios[TOBOGAN]);
 			}
 		}
@@ -217,14 +212,134 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					sendMessage("4");
-					pthread_mutex_lock(&mutexPessoasParque);
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
-					pthread_mutex_unlock(&mutexPessoasParque);
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
 				}
 			}
 		}
-		pessoa->sitio = TOBOGAN;
+	case PISTASRAPIDAS:
+		if (simConfiguration.pistasFunci)
+		{
+			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
+			{
+
+				int semValue;
+				pessoa->sitio = PISTASRAPIDAS;
+				sem_wait(&parque.filaSitios[PISTASRAPIDAS]);
+				
+
+				printf(AMARELO "O visitante %d divertiu-se nas PISTAS RÁPIDAS.\n" RESET, pessoa->id);
+				sendMessage("D");
+				sem_post(&parque.filaSitios[PISTASRAPIDAS]);
+			}
+		}
+		else
+		{
+			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
+			{
+				pessoa->desistiu = TRUE;
+				printf(VERMELHO "O visitante %d saiu. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
+				sendMessage(":");
+				if (pessoa->noEstacionamento)
+				{
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
+				}
+			}
+		}
+	case PISCINA:
+		if (simConfiguration.piscinaFunci)
+		{
+			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
+			{
+				pessoa->sitio = PISCINA;
+				sem_wait(&parque.filaSitios[PISCINA]);
+				printf(AMARELO "O visitante %d divertiu-se na PISCINA.\n" RESET, pessoa->id);
+				sendMessage("E");
+				sem_post(&parque.filaSitios[PISCINA]);
+			}
+		}
+		else
+		{
+			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
+			{
+				pessoa->desistiu = TRUE;
+				printf(VERMELHO "O visitante %d saiu. Não tinha PISCINA. %s\n", pessoa->id, mensagem);
+				sendMessage(":");
+				if (pessoa->noEstacionamento)
+				{
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
+				}
+			}
+		}
+	case ESCORREGA:
+		if (simConfiguration.escorregaFunci)
+		{
+			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
+			{
+				pessoa->sitio = ESCORREGA;
+				sem_wait(&parque.filaSitios[ESCORREGA]);
+				printf(AMARELO "O visitante %d divertiu-se nos ESCORREGAS.\n" RESET, pessoa->id);
+				sendMessage("F");
+				sem_post(&parque.filaSitios[ESCORREGA]);
+			}
+		}
+		else
+		{
+			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
+			{
+				pessoa->desistiu = TRUE;
+				printf(VERMELHO "O visitante %d saiu. Não tinha ESCORREGAS. %s\n", pessoa->id, mensagem);
+				sendMessage(":");
+				if (pessoa->noEstacionamento)
+				{
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
+				}
+			}
+		}
+	case RIOLENTO:
+		if (simConfiguration.escorregaFunci)
+		{
+			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
+			{
+
+				pessoa->sitio = RIOLENTO;
+				sem_wait(&parque.filaSitios[RIOLENTO]);
+			}
+		}
+		else
+		{
+			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
+			{
+				pessoa->desistiu = TRUE;
+				printf(VERMELHO "O visitante %d saiu. Não tinha RIOLENTO. %s\n", pessoa->id, mensagem);
+				sendMessage(":");
+				if (pessoa->noEstacionamento)
+				{
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
+				}
+			}
+		}
+	default:
+		break;
 	}
 }
 
@@ -247,10 +362,11 @@ void WaitingListWaterPark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				if (pessoa->noEstacionamento)
 				{
-					sendMessage("4");
-					pthread_mutex_lock(&mutexPessoasParque);
+					
+					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
-					pthread_mutex_unlock(&mutexPessoasParque);
+					pthread_mutex_unlock(&mutexPessoasEstacionamento);
+					sendMessage("4");
 				}
 			}
 			else
@@ -282,22 +398,23 @@ void WaitingListWaterPark(struct Person *pessoa)
 					sendMessage("6");
 					if (pessoa->noEstacionamento)
 					{
-						sendMessage("4");
-						pthread_mutex_lock(&mutexPessoasParque);
+						pthread_mutex_lock(&mutexPessoasEstacionamento);
 						parque.numeroPessoasNoEstacionamento--;
-						pthread_mutex_unlock(&mutexPessoasParque);
+						pthread_mutex_unlock(&mutexPessoasEstacionamento);
+						sendMessage("4");
 					}
 				}
 				else
 				{
 					pessoa->noParque = TRUE;
-					sendMessage("6");
-					sendMessage("9");
+					
 					printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
 					pthread_mutex_lock(&mutexPessoasParque);
 					parque.numeroPessoaEspera--;
 					parque.numeroPessoasNoParque++;
 					pthread_mutex_unlock(&mutexPessoasParque);
+					sendMessage("6");
+					sendMessage("9");
 					sem_post(&parque.filaParque);
 				}
 			}
@@ -305,11 +422,12 @@ void WaitingListWaterPark(struct Person *pessoa)
 		else
 		{
 			pessoa->noParque = TRUE;
-			sendMessage("9");
+			
 			printf(VERDE "O visitante PRIORITÁRIO %d entrou no parque.\n", pessoa->id);
 			pthread_mutex_lock(&mutexPessoasParque);
 			parque.numeroPessoasNoParque++;
 			pthread_mutex_unlock(&mutexPessoasParque);
+			sendMessage("9");
 		}
 	}
 	else
@@ -343,8 +461,9 @@ void WaitingListParking(struct Person *pessoa)
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoaEsperaNoEstacionamento++;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					pessoa->tempoChegadaFilaEspera = current_timestamp();
 					sendMessage("7");
+					pessoa->tempoChegadaFilaEspera = current_timestamp();
+					
 					sem_wait(&parque.filaEstacionamento);
 					pthread_mutex_lock(&mutexVariaveisSimulacao);
 					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
@@ -371,14 +490,15 @@ void WaitingListParking(struct Person *pessoa)
 					}
 					else
 					{
-						sendMessage("8");
-						sendMessage("3");
+						
 						pessoa->noEstacionamento = TRUE;
 						printf(MAGENTA "O visitante %d conseguiu estacionar.\n", pessoa->id);
 						pthread_mutex_lock(&mutexPessoasEstacionamento);
 						parque.numeroPessoaEsperaNoEstacionamento--;
 						parque.numeroPessoasNoEstacionamento++;
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
+						sendMessage("8");
+						sendMessage("3");
 						sem_post(&parque.filaEstacionamento);
 						WaitingListWaterPark(pessoa);
 					}
@@ -451,7 +571,7 @@ void Simulation()
 	int tempoLimite = simConfiguration.simDias * DIA;
 	int idx;
 	char sendingMessage[BUF_SIZE];
-
+	int semValue;
 	for (idx = 0; idx < numeroAleatorio(1000, 700); idx++)
 	{
 		if (pthread_create(&IDthread[idPessoa], NULL, Person, NULL))
@@ -461,6 +581,8 @@ void Simulation()
 			exit(1);
 		}
 	}
+
+	
 
 	usleep(2000000);
 	sendMessage("!");

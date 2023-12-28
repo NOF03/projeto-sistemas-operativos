@@ -5,7 +5,7 @@
 
 struct monConfig monConfiguration;
 int sockfd = 0;
-int numPessoasMortas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramTobogan = 0;
+int numPessoasMortas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramTobogan = 0, numPessoasEntraramPistasRapidas = 0, numPessoasEntraramPiscina = 0, numPessoasEntraramEscorrega = 0, numPessoasEntraramRioLento = 0;
 bool simulacaoAtiva = TRUE;
 
 void atribuirConfiguracao(char **results)
@@ -58,6 +58,18 @@ void trataMensagem(int mensagem)
 	case 67:
 		numPessoasEntraramTobogan++;
 		break;
+	case 68:
+		numPessoasEntraramPistasRapidas++;
+		break;
+	case 69:
+		numPessoasEntraramPiscina++;
+		break;
+	case 70:
+		numPessoasEntraramEscorrega++;
+		break;
+	case 71:
+		numPessoasEntraramRioLento++;
+		break;
 	case 33:
 		simulacaoAtiva = FALSE;
 		break;
@@ -72,6 +84,10 @@ void trataMensagem(int mensagem)
 	printf("Pessoas no parque: %d\n", numPessoasParque);
 	printf("Cacifos Ocupados: %d\n", numCacifosOcupados);
 	printf("Pessoas que entraram no Tobogan: %d\n", numPessoasEntraramTobogan);
+	printf("Pessoas que entraram nas Pistas Rápidas: %d\n", numPessoasEntraramPistasRapidas);
+	printf("Pessoas que entraram na Piscina: %d\n", numPessoasEntraramPiscina);
+	printf("Pessoas que entraram na Escorrega: %d\n", numPessoasEntraramEscorrega);
+	printf("Pessoas que entraram no Rio Lento: %d\n", numPessoasEntraramRioLento);
 }
 
 void readMessage()
