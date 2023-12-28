@@ -5,7 +5,7 @@
 
 struct monConfig monConfiguration;
 int sockfd = 0;
-int numPessoasMortas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0;
+int numPessoasMortas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramTobogan = 0;
 bool simulacaoAtiva = TRUE;
 
 void atribuirConfiguracao(char **results)
@@ -50,6 +50,15 @@ void trataMensagem(int mensagem)
 		numPessoasParque--;
 		break;
 	case 65:
+		numCacifosOcupados++;
+		break;
+	case 66:
+		numCacifosOcupados--;
+		break;
+	case 67:
+		numPessoasEntraramTobogan++;
+		break;
+	case 33:
 		simulacaoAtiva = FALSE;
 		break;
 	default:
@@ -61,6 +70,8 @@ void trataMensagem(int mensagem)
 	printf("Pessoas na fila de espera do estacionamento: %d\n", numPessoasFilaEstacionamento);
 	printf("Pessoas no estacionamento do parque: %d\n", numPessoasEstacionamento);
 	printf("Pessoas no parque: %d\n", numPessoasParque);
+	printf("Cacifos Ocupados: %d\n", numCacifosOcupados);
+	printf("Pessoas que entraram no Tobogan: %d\n", numPessoasEntraramTobogan);
 }
 
 void readMessage()

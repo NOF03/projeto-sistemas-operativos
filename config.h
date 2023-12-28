@@ -44,12 +44,15 @@
 struct simConfig {
     int tempoMedioDeEspera;
     int simDias;
-	int tamMaxFilaAtracoes;
-	float probSairFilaEntrada;
+	int capAtracoes;
+    int capBalnearios;
+	int capCacifos;
+    float probSairFilaEntrada;
 	float probSairAtracoes;
 	bool tobogansFunci;
 	bool piscinaFunci;
 	bool pistasFunci;
+    float probEntrarNumaAtracao;
 	float probSairSemUmaAtracao;
 	int lotEstacionamento;
 	int lotParque;
@@ -60,8 +63,6 @@ struct simConfig {
 struct monConfig {
     char* nomeParque;
 };
-
-sem_t mutexMensagens;
 
 char** carregarConfiguracao(char* filename) {
 

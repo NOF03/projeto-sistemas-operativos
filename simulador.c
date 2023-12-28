@@ -28,6 +28,7 @@ struct Person
 	int sitio;
 	int tempoMaximoEspera;
 	bool precisaCacifo;
+	bool alugouCacifo;
 };
 
 struct Parque
@@ -42,8 +43,9 @@ struct Parque
 	int numeroEntradaDisponivel;
 	int numeroEstacionamentoDisponivel;
 	sem_t filaSitios[BUF_SIZE];
+	int capacidadeSitios[BUF_SIZE];
+	int capacidadeAtualSitios[BUF_SIZE];
 };
-
 
 enum Sitios
 {
@@ -57,7 +59,8 @@ enum Sitios
 	TOBOGAN,
 	PISCINA,
 	RIOLENTO,
-	ESCORREGA
+	ESCORREGA,
+	TOTAL
 };
 
 // TRINCOS E SEMAFOROS
@@ -66,6 +69,7 @@ pthread_mutex_t mutexPessoasParque;
 pthread_mutex_t mutexPessoasEstacionamento;
 pthread_mutex_t mutexVariaveisSimulacao;
 pthread_mutex_t mutexPessoasCacifos;
+sem_t mutexMensagens;
 sem_t semCriarPessoa;
 
 void atribuirConfiguracao(char **results)
@@ -73,16 +77,19 @@ void atribuirConfiguracao(char **results)
 
 	simConfiguration.simDias = atoi(results[0]);
 	simConfiguration.tempoMedioDeEspera = atoi(results[1]);
-	simConfiguration.tamMaxFilaAtracoes = atoi(results[2]);
-	simConfiguration.probSairFilaEntrada = strtof(results[3], NULL);
-	simConfiguration.probSairAtracoes = strtof(results[4], NULL);
-	simConfiguration.tobogansFunci = (strcmp(results[5], "Sim") > 0) ? true : false;
-	simConfiguration.piscinaFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
-	simConfiguration.pistasFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
-	simConfiguration.probSairSemUmaAtracao = strtof(results[8], NULL);
-	simConfiguration.lotEstacionamento = atoi(results[9]);
-	simConfiguration.lotParque = atoi(results[10]);
-	simConfiguration.probSairSemEstacionamento = strtof(results[11], NULL);
+	simConfiguration.capAtracoes = atoi(results[2]);
+	simConfiguration.capBalnearios = atoi(results[3]);
+	simConfiguration.capCacifos = atoi(results[4]);
+	simConfiguration.probSairFilaEntrada = strtof(results[5], NULL);
+	simConfiguration.probSairAtracoes = strtof(results[6], NULL);
+	simConfiguration.tobogansFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
+	simConfiguration.piscinaFunci = (strcmp(results[8], "Sim") > 0) ? true : false;
+	simConfiguration.pistasFunci = (strcmp(results[9], "Sim") > 0) ? true : false;
+	simConfiguration.probEntrarNumaAtracao = strtof(results[10], NULL);
+	simConfiguration.probSairSemUmaAtracao = strtof(results[11], NULL);
+	simConfiguration.lotEstacionamento = atoi(results[12]);
+	simConfiguration.lotParque = atoi(results[13]);
+	simConfiguration.probSairSemEstacionamento = strtof(results[14], NULL);
 
 	return;
 };
@@ -112,22 +119,45 @@ void startSemaphoresAndLatches()
 	sem_init(&semCriarPessoa, 0, 1);
 	sem_init(&parque.filaParque, 0, 1);
 	sem_init(&parque.filaEstacionamento, 0, 1);
+	sem_init(&mutexMensagens, 0, 1);
 
 	parque.numeroPessoaEspera = 0;
 	parque.numeroPessoaEsperaNoEstacionamento = 0;
 	parque.numeroPessoasNoEstacionamento = 0;
 	parque.numeroPessoasNoParque = 0;
 	parque.numeroCacifosOcupados = 0;
+	sem_init(&parque.filaSitios[BALNEARIOS], 0, simConfiguration.capBalnearios);
+	sem_init(&parque.filaSitios[CACIFOS], 0, simConfiguration.capCacifos);
+	sem_init(&parque.filaSitios[RESTAURANTE], 0, 30);
+	sem_init(&parque.filaSitios[CABANAS], 0, 1);
+	sem_init(&parque.filaSitios[ENFERMARIA], 0, 10);
+	sem_init(&parque.filaSitios[PISTASRAPIDAS], 0, 4);
+	sem_init(&parque.filaSitios[TOBOGAN], 0, 2);
+	sem_init(&parque.filaSitios[RIOLENTO], 0, simConfiguration.capAtracoes);
+	sem_init(&parque.filaSitios[PISCINA], 0, simConfiguration.capAtracoes);
+	sem_init(&parque.filaSitios[ESCORREGA], 0, 1);
 
-	for (int i = 0; i < BUF_SIZE; i++)
+	for (int i = 0; i < TOTAL; i++)
 	{
-		sem_init(&parque.filaSitios[i], 0, 1);
+		if (i == PISTASRAPIDAS)
+		{
+			sem_init(&parque.filaSitios[i], 0, 4);
+		}
+		else
+		{
+			sem_init(&parque.filaSitios[i], 0, 1);
+		}
 	}
 }
 
 int numeroAleatorio(int numeroMaximo, int numeroMinimo)
 {
 	return rand() % (numeroMaximo + 1 - numeroMinimo) + numeroMinimo;
+}
+
+int probabilidade(float prob)
+{ // Função probabilidade, retorna true ou false
+	return numeroAleatorio(100, 0) < (prob * 100);
 }
 
 long long current_timestamp()
@@ -148,24 +178,108 @@ void sendMessage(char *sendingMessage)
 	write(newsockfd, sendingMessage, strlen(sendingMessage));
 }
 
+void UsePark(struct Person *pessoa)
+{
+	char mensagem[BUF_SIZE] = "";
+
+	if (pessoa->precisaCacifo && parque.numeroCacifosOcupados < simConfiguration.capCacifos && !pessoa->alugouCacifo)
+	{
+		sem_wait(&parque.filaSitios[CACIFOS]);
+		pthread_mutex_lock(&mutexPessoasCacifos);
+		parque.numeroCacifosOcupados++;
+		pthread_mutex_unlock(&mutexPessoasCacifos);
+		sem_post(&parque.filaSitios[CACIFOS]);
+		printf(CIANO "O visitante %s %d alugou cacifo.\n", distinguirPrioritario(pessoa), pessoa->id);
+		sendMessage("A");
+		pessoa->alugouCacifo = true;
+	}
+
+	if (pessoa->sitio == NENHUM)
+	{
+		if (simConfiguration.tobogansFunci)
+		{
+			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
+			{
+
+				sem_wait(&parque.filaSitios[TOBOGAN]);
+				printf(AMARELO "O visitante %d entrou dos TOBOGANS.\n" RESET, pessoa->id);
+				sendMessage("C");
+				printf(AMARELO "O visitante %d saiu dos TOBOGANS.\n" RESET, pessoa->id);
+				sem_post(&parque.filaSitios[TOBOGAN]);
+			}
+		}
+		else
+		{
+			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
+			{
+				pessoa->desistiu = TRUE;
+				printf(VERMELHO "O visitante %d saiu. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
+				sendMessage(":");
+				if (pessoa->noEstacionamento)
+				{
+					sendMessage("4");
+					pthread_mutex_lock(&mutexPessoasParque);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasParque);
+				}
+			}
+		}
+		pessoa->sitio = TOBOGAN;
+	}
+}
+
 void WaitingListWaterPark(struct Person *pessoa)
 {
 	char mensagem[BUF_SIZE] = "";
 	int index, tempoEspera;
 	int valorSemaforo;
-	if (!pessoa->noParque)
+
+	pthread_mutex_lock(&mutexPessoasParque);
+	int pessoasNoParque = parque.numeroPessoasNoParque;
+	pthread_mutex_unlock(&mutexPessoasParque);
+	if (pessoasNoParque < simConfiguration.lotParque)
 	{
-		pthread_mutex_lock(&mutexPessoasParque);
-		int pessoasNoParque = parque.numeroPessoasNoParque;
-		pthread_mutex_unlock(&mutexPessoasParque);
-		if (pessoasNoParque < simConfiguration.lotParque)
+		if (!pessoa->prioritario)
 		{
-			if (!pessoa->prioritario)
+			if (numeroAleatorio(100, 0) < simConfiguration.probSairFilaEntrada * parque.numeroPessoaEspera)
 			{
-				if (numeroAleatorio(100, 0) < simConfiguration.probSairFilaEntrada * parque.numeroPessoaEspera)
+				printf(VERMELHO "O visitante %d desistiu. Muita gente a sua frente na fila.\n", pessoa->id);
+				pessoa->desistiu = TRUE;
+				if (pessoa->noEstacionamento)
 				{
-					printf(VERMELHO "O visitante %d desistiu. Muita gente a sua frente na fila.\n", pessoa->id);
+					sendMessage("4");
+					pthread_mutex_lock(&mutexPessoasParque);
+					parque.numeroPessoasNoEstacionamento--;
+					pthread_mutex_unlock(&mutexPessoasParque);
+				}
+			}
+			else
+			{
+				pessoa->tempoChegadaFilaEspera = current_timestamp();
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoaEspera++;
+				pthread_mutex_unlock(&mutexPessoasParque);
+				sendMessage("5");
+				sem_wait(&parque.filaParque);
+				pthread_mutex_lock(&mutexVariaveisSimulacao);
+				tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
+				pthread_mutex_unlock(&mutexVariaveisSimulacao);
+				while (tempoEspera <= pessoa->tempoMaximoEspera && parque.numeroPessoasNoParque >= simConfiguration.lotParque)
+				{
+					pthread_mutex_lock(&mutexVariaveisSimulacao);
+					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
+					pthread_mutex_unlock(&mutexVariaveisSimulacao);
+					strcpy(mensagem, "PARQUE CHEIO.");
+				};
+				if (tempoEspera > pessoa->tempoMaximoEspera)
+				{
 					pessoa->desistiu = TRUE;
+					pthread_mutex_lock(&mutexPessoasParque);
+					parque.numeroPessoaEspera--;
+					sem_post(&parque.filaParque);
+					pthread_mutex_unlock(&mutexPessoasParque);
+					printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera. %s\n", pessoa->id, mensagem);
+					sendMessage("6");
 					if (pessoa->noEstacionamento)
 					{
 						sendMessage("4");
@@ -176,75 +290,32 @@ void WaitingListWaterPark(struct Person *pessoa)
 				}
 				else
 				{
-					pessoa->tempoChegadaFilaEspera = current_timestamp();
+					pessoa->noParque = TRUE;
+					sendMessage("6");
+					sendMessage("9");
+					printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
 					pthread_mutex_lock(&mutexPessoasParque);
-					parque.numeroPessoaEspera++;
+					parque.numeroPessoaEspera--;
+					parque.numeroPessoasNoParque++;
 					pthread_mutex_unlock(&mutexPessoasParque);
-					sendMessage("5");
-					sem_wait(&parque.filaParque);
-					pthread_mutex_lock(&mutexVariaveisSimulacao);
-					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
-					pthread_mutex_unlock(&mutexVariaveisSimulacao);
-					while (tempoEspera <= pessoa->tempoMaximoEspera && parque.numeroPessoasNoParque >= simConfiguration.lotParque)
-					{
-						pthread_mutex_lock(&mutexVariaveisSimulacao);
-						tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
-						pthread_mutex_unlock(&mutexVariaveisSimulacao);
-						strcpy(mensagem, "PARQUE CHEIO.");
-					};
-					if (tempoEspera > pessoa->tempoMaximoEspera)
-					{
-						pessoa->desistiu = TRUE;
-						pthread_mutex_lock(&mutexPessoasParque);
-						parque.numeroPessoaEspera--;
-						sem_post(&parque.filaParque);
-						pthread_mutex_unlock(&mutexPessoasParque);
-						printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera. %s\n", pessoa->id, mensagem);
-						sendMessage("6");
-					}
-					else
-					{
-						pessoa->noParque = TRUE;
-						sendMessage("6");
-						sendMessage("9");
-						printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
-						if(pessoa->precisaCacifo){
-							pthread_mutex_lock(&mutexPessoasCacifos);
-							printf(CIANO "O visitante %d alugou cacifo.\n", pessoa->id);
-							parque.numeroCacifosOcupados++;
-							printf(CIANO "Estão alugados %d cacifos.\n", parque.numeroCacifosOcupados);
-							pthread_mutex_unlock(&mutexPessoasCacifos);
-						}
-						pthread_mutex_lock(&mutexPessoasParque);
-						parque.numeroPessoaEspera--;
-						parque.numeroPessoasNoParque++;
-						pthread_mutex_unlock(&mutexPessoasParque);
-						sem_post(&parque.filaParque);
-					}
+					sem_post(&parque.filaParque);
 				}
-			}
-			else
-			{
-				pessoa->noParque = TRUE;
-				sendMessage("9");
-				printf(VERDE "O visitante PRIORITÁRIO %d entrou no parque.\n", pessoa->id);
-				if(pessoa->precisaCacifo){
-					pthread_mutex_lock(&mutexPessoasCacifos);
-					parque.numeroCacifosOcupados++;
-					pthread_mutex_unlock(&mutexPessoasCacifos);
-
-					printf(CIANO "O visitante PRIORITÁRIO %d alugou cacifo.\n", pessoa->id);
-					printf(CIANO "Estão alugados %d cacifos.\n", parque.numeroCacifosOcupados);
-				}
-				pthread_mutex_lock(&mutexPessoasParque);
-				parque.numeroPessoasNoParque++;
-				pthread_mutex_unlock(&mutexPessoasParque);
 			}
 		}
 		else
 		{
-			pessoa->desistiu = TRUE;
+			pessoa->noParque = TRUE;
+			sendMessage("9");
+			printf(VERDE "O visitante PRIORITÁRIO %d entrou no parque.\n", pessoa->id);
+			pthread_mutex_lock(&mutexPessoasParque);
+			parque.numeroPessoasNoParque++;
+			pthread_mutex_unlock(&mutexPessoasParque);
 		}
+	}
+	else
+	{
+		pessoa->desistiu = TRUE;
+		printf(VERMELHO "O visitante %d desistiu. PARQUE CHEIO.\n", pessoa->id);
 	}
 }
 
@@ -326,17 +397,12 @@ void WaitingListParking(struct Person *pessoa)
 	}
 }
 
-
-
-void UsePark()
-{
-}
-
 struct Person createPerson()
 {
 	struct Person person;
 
-	person.id = idPessoa;
+	person.id = idPessoa++;
+
 	person.prioritario = numeroAleatorio(10, 0) == 0 ? true : false;
 	person.precisaEstacionamento = numeroAleatorio(1, 0) == 0 ? true : false;
 	person.noParque = false;
@@ -345,26 +411,27 @@ struct Person createPerson()
 	person.sitio = NENHUM;
 	person.tempoMaximoEspera = numeroAleatorio(simConfiguration.tempoMedioDeEspera, (simConfiguration.tempoMedioDeEspera * 3) / 4);
 	person.precisaCacifo = numeroAleatorio(1, 0) == 0 ? true : false;
-	pthread_mutex_lock(&mutexCriarPessoa);
-	idPessoa++;
-	pthread_mutex_unlock(&mutexCriarPessoa);
 
 	return person;
 }
 
 void *Person()
 {
+
+	sem_wait(&semCriarPessoa);
 	struct Person onePerson = createPerson();
-	createdPeople[onePerson.id] = &onePerson;
-	char buffer[BUF_SIZE];
 	printf(RESET "Um visitante quer entrar no parque. Numero %d.\n", onePerson.id);
 	sendMessage("1");
+	sem_post(&semCriarPessoa);
+	createdPeople[onePerson.id] = &onePerson;
+	char buffer[BUF_SIZE];
+	WaitingListParking(&onePerson);
+
 	while (TRUE)
 	{
-		WaitingListParking(&onePerson);
-
 		if (!onePerson.desistiu)
 		{
+			UsePark(&onePerson);
 			break;
 		}
 		else
@@ -389,13 +456,14 @@ void Simulation()
 	{
 		if (pthread_create(&IDthread[idPessoa], NULL, Person, NULL))
 		{
+
 			printf("Erro na criação da tarefa \n");
 			exit(1);
 		}
 	}
 
 	usleep(2000000);
-	sendMessage("A");
+	sendMessage("!");
 }
 
 void serverCreation()
