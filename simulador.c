@@ -71,6 +71,7 @@ pthread_mutex_t mutexPessoasParque;
 pthread_mutex_t mutexPessoasEstacionamento;
 pthread_mutex_t mutexVariaveisSimulacao;
 pthread_mutex_t mutexPessoasCacifos;
+pthread_mutex_t mutexPessoasPistasRapidas;
 sem_t mutexMensagens;
 sem_t semCriarPessoa;
 
@@ -120,6 +121,16 @@ void startSemaphoresAndLatches()
 		printf(VERMELHO "Inicialização do trinco de criar cacifos falhou!.\n");
 	}
 
+	if (pthread_mutex_init(&mutexVariaveisSimulacao, NULL) != 0)
+	{
+		printf(VERMELHO "Inicialização do trinco de criar cacifos falhou!.\n");
+	}
+
+	if (pthread_mutex_init(&mutexPessoasPistasRapidas, NULL) != 0)
+	{
+		printf(VERMELHO "Inicialização do trinco de criar cacifos falhou!.\n");
+	}
+
 	sem_init(&semCriarPessoa, 0, 1);
 	sem_init(&parque.filaParque, 0, 1);
 	sem_init(&parque.filaEstacionamento, 0, 1);
@@ -142,6 +153,7 @@ void startSemaphoresAndLatches()
 	sem_init(&parque.filaSitios[ESCORREGA], 0, 1);
 
 	pistasRapidasEmAndamento = false;
+	parque.capacidadeAtualSitios[PISTASRAPIDAS] = 0;
 }
 
 int numeroAleatorio(int numeroMaximo, int numeroMinimo)
@@ -212,7 +224,7 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -229,11 +241,34 @@ void UsePark(struct Person *pessoa)
 				int semValue;
 				pessoa->sitio = PISTASRAPIDAS;
 				sem_wait(&parque.filaSitios[PISTASRAPIDAS]);
-				
-
+				pthread_mutex_lock(&mutexPessoasPistasRapidas);
+				int capacidadeAtual = parque.capacidadeAtualSitios[PISTASRAPIDAS];
+				pthread_mutex_unlock(&mutexPessoasPistasRapidas);
+				while (pistasRapidasEmAndamento || capacidadeAtual == 4)
+				{
+				}
+				pthread_mutex_lock(&mutexPessoasPistasRapidas);
+				parque.capacidadeAtualSitios[PISTASRAPIDAS]++;
+				if (parque.capacidadeAtualSitios[PISTASRAPIDAS] == 4) {
+					pistasRapidasEmAndamento = true;
+				}
+				pthread_mutex_unlock(&mutexPessoasPistasRapidas);
+				while (!pistasRapidasEmAndamento) {}
 				printf(AMARELO "O visitante %d divertiu-se nas PISTAS RÁPIDAS.\n" RESET, pessoa->id);
 				sendMessage("D");
+				
+				pthread_mutex_lock(&mutexPessoasPistasRapidas);
+				
+				parque.capacidadeAtualSitios[PISTASRAPIDAS]--;
+				if (parque.capacidadeAtualSitios[PISTASRAPIDAS] == 0) {
+					pistasRapidasEmAndamento = false;
+				}
+				pthread_mutex_unlock(&mutexPessoasPistasRapidas);
+				
+				while (pistasRapidasEmAndamento) {};
+				
 				sem_post(&parque.filaSitios[PISTASRAPIDAS]);
+				
 			}
 		}
 		else
@@ -245,7 +280,7 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -274,7 +309,7 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -303,7 +338,7 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -330,7 +365,7 @@ void UsePark(struct Person *pessoa)
 				sendMessage(":");
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -362,7 +397,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				if (pessoa->noEstacionamento)
 				{
-					
+
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
@@ -407,7 +442,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 				else
 				{
 					pessoa->noParque = TRUE;
-					
+
 					printf(VERDE "O visitante %d entrou no parque.\n", pessoa->id);
 					pthread_mutex_lock(&mutexPessoasParque);
 					parque.numeroPessoaEspera--;
@@ -422,7 +457,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 		else
 		{
 			pessoa->noParque = TRUE;
-			
+
 			printf(VERDE "O visitante PRIORITÁRIO %d entrou no parque.\n", pessoa->id);
 			pthread_mutex_lock(&mutexPessoasParque);
 			parque.numeroPessoasNoParque++;
@@ -463,7 +498,7 @@ void WaitingListParking(struct Person *pessoa)
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
 					sendMessage("7");
 					pessoa->tempoChegadaFilaEspera = current_timestamp();
-					
+
 					sem_wait(&parque.filaEstacionamento);
 					pthread_mutex_lock(&mutexVariaveisSimulacao);
 					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
@@ -490,7 +525,7 @@ void WaitingListParking(struct Person *pessoa)
 					}
 					else
 					{
-						
+
 						pessoa->noEstacionamento = TRUE;
 						printf(MAGENTA "O visitante %d conseguiu estacionar.\n", pessoa->id);
 						pthread_mutex_lock(&mutexPessoasEstacionamento);
@@ -507,7 +542,7 @@ void WaitingListParking(struct Person *pessoa)
 			else
 			{
 				pessoa->desistiu = TRUE;
-				printf(VERMELHO "O visitante %d desistiu. PARQUE CHEIO.\n", pessoa->id);
+				printf(VERMELHO "O visitante %d desistiu. ESTACIONAMENTO CHEIO.\n", pessoa->id);
 			}
 		}
 	}
@@ -581,8 +616,6 @@ void Simulation()
 			exit(1);
 		}
 	}
-
-	
 
 	usleep(2000000);
 	sendMessage("!");
