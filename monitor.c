@@ -167,8 +167,7 @@ void ligacaoSocket()
 void escreveRelatorio(FILE *report)
 {
 	fprintf(report, "\nNumero de pessoas que quiseram entrar no Parque: %d", numPessoasQueriamEntrarParque);
-	
-	
+
 	fprintf(report, "\n\nNumero de pessoas que entraram no Parque: %d", numPessoasParque);
 	fprintf(report, "\nNumero de pessoas no estacionamento do Parque: %d", numPessoasEstacionamento);
 	fprintf(report, "\nNumero de cacifos alugados: %d", numCacifosOcupados);
@@ -182,7 +181,7 @@ void escreveRelatorio(FILE *report)
 	fprintf(report, "\n	Pistas Rápidas: %d", numPessoasEntraramPistasRapidas);
 	fprintf(report, "\n	Piscina: %d", numPessoasEntraramPiscina);
 	fprintf(report, "\n	Rio Lento: %d", numPessoasEntraramRioLento);
-	
+
 	fprintf(report, "\n\nPessoas que foram à enfermaria: %d", numPessoasFeridas);
 }
 
@@ -196,6 +195,24 @@ void escreveTitulo(char *phrase, FILE *report)
 	fprintf(report, "--------------------------------");
 	fprintf(report, "\nRELATORIO DO %s A %d/%d", phrase, data_hora_atual->tm_mday, data_hora_atual->tm_mon + 1);
 	fprintf(report, "\n--------------------------------");
+}
+
+void initializeVariables()
+{
+	numPessoasFeridas = 0;
+	numPessoasParque = 0;
+	numPessoasEstacionamento = 0;
+	numPessoasQueriamEntrarParque = 0;
+	numPessoasFilaParque = 0;
+	numPessoasFilaEstacionamento = 0;
+	numCacifosOcupados = 0;
+	numPessoasEntraramTobogan = 0;
+	numPessoasEntraramPistasRapidas = 0;
+	numPessoasEntraramPiscina = 0;
+	numPessoasEntraramEscorrega = 0;
+	numPessoasEntraramRioLento = 0;
+	numCabanasOcupadas = 0;
+	numPessoasBalnearios = 0;
 }
 
 int simulacao()
@@ -230,6 +247,7 @@ int main(int argc, char **argv)
 	{
 		printf("++++++++++++ Bem vindo ++++++++++++\n");
 		printf("1: Comecar simulacao\n");
+		printf("0: Sair\n");
 
 		scanf("%d", &opcao);
 
@@ -237,14 +255,16 @@ int main(int argc, char **argv)
 		{
 		case 1:
 			simulacaoAtiva = true;
+			initializeVariables();
 			atribuirConfiguracao(carregarConfiguracao(argv[1]));
 			ligacaoSocket();
 			simulacao();
 			close(sockfd);
 			break;
-
-		default:
+		case 0:
 			return 0;
+		default:
+			break;
 		}
 	}
 

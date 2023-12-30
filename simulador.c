@@ -785,24 +785,22 @@ void *Person()
 	createdPeople[onePerson.id] = &onePerson;
 	char buffer[BUF_SIZE];
 	WaitingListParking(&onePerson);
-	if (onePerson.desistiu) return;
+	if (onePerson.desistiu) return NULL;
 	while (TRUE)
 	{
-
+		usleep(300000);
 		if (!onePerson.desistiu)
 		{
 			if (minutosDecorridos >= tempoLimite)
 			{
-				usleep(6000000);
 				printf(AZUL "O visitante %d divirtiu-se e saiu quando o parque fechou!\n", onePerson.id);
 				break;
 			}
-			usleep(200000);
+			
 			UsePark(&onePerson);
 		}
 		else
 		{
-			printf(VERMELHO "O visitante %d fartou-se e saiu do PARQUE.\n", onePerson.id);
 			break;
 		}
 	}
@@ -841,7 +839,7 @@ void Simulation()
 	usleep(12000000);
 	for (idx = 0; idx < numeroPessoas; idx++)
 	{
-		if (pthread_join(IDthread[idPessoa], NULL))
+		if (pthread_join(IDthread[numeroPessoas], NULL))
 		{
 		}
 	}
