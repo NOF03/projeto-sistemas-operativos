@@ -1,4 +1,20 @@
 --------------------------------
 RELATORIO DO AQUAPARK A 29/12
 --------------------------------
-Numero de pessoas que entraram no Parque: 400
+Numero de pessoas que quiseram entrar no Parque: 555
+
+Numero de pessoas que entraram no Parque: 388
+Numero de pessoas no estacionamento do Parque: 193
+Numero de cacifos alugados: 79
+Numero de cabanas alugadas: 28
+
+Numero de pessoas que utilizaram os balneários: 504
+
+Numero de pessoas que utilizaram cada atração:
+	Tobogans: 933
+	Escorrega: 851
+	Pistas Rápidas: 872
+	Piscina: 0
+	Rio Lento: 868
+
+Pessoas que foram à enfermaria: 29
