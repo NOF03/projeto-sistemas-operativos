@@ -214,19 +214,19 @@ void escreveRelatorio(FILE *report)
 {
 	fprintf(report, "\nNumero de pessoas que quiseram entrar no Parque: %d", numPessoasQueriamEntrarParque);
 
-	fprintf(report, "\n\nNumero de pessoas que entraram no Parque: %d", numPessoasParque);
-	fprintf(report, "\nNumero de pessoas no estacionamento do Parque: %d", numPessoasEstacionamento);
+	fprintf(report, "\n\nNumero de pessoas que entraram no Parque: %d || Tempo médio de espera: %d min", numPessoasParque, medioTempoEntrarNoParque);
+	fprintf(report, "\nNumero de pessoas no estacionamento do Parque: %d || Tempo médio de espera: %d min", numPessoasEstacionamento, medioTempoEntrarNoEstacionamento);
 	fprintf(report, "\nNumero de cacifos alugados: %d", numCacifosOcupados);
 	fprintf(report, "\nNumero de cabanas alugadas: %d", numCabanasOcupadas);
 
 	fprintf(report, "\n\nNumero de pessoas que utilizaram os balneários: %d", numPessoasBalnearios);
 
 	fprintf(report, "\n\nNumero de pessoas que utilizaram cada atração:");
-	fprintf(report, "\n	Tobogans: %d", numPessoasEntraramTobogan);
-	fprintf(report, "\n	Escorrega: %d", numPessoasEntraramEscorrega);
-	fprintf(report, "\n	Pistas Rápidas: %d", numPessoasEntraramPistasRapidas);
-	fprintf(report, "\n	Piscina: %d", numPessoasEntraramPiscina);
-	fprintf(report, "\n	Rio Lento: %d", numPessoasEntraramRioLento);
+	fprintf(report, "\n	Tobogans: %d || Tempo médio de espera: %d min", numPessoasEntraramTobogan, medioTempoEntrarNoToboga);
+	fprintf(report, "\n	Escorrega: %d || Tempo médio de espera: %d min", numPessoasEntraramEscorrega, medioTempoEntrarNoEscorrega);
+	fprintf(report, "\n	Pistas Rápidas: %d || Tempo médio de espera: %d min", numPessoasEntraramPistasRapidas, medioTempoEntrarNoPistasRapidas);
+	fprintf(report, "\n	Piscina: %d || Tempo médio de espera: %d min", numPessoasEntraramPiscina, medioTempoEntrarNoPiscina);
+	fprintf(report, "\n	Rio Lento: %d || Tempo médio de espera: %d min", numPessoasEntraramRioLento, medioTempoEntrarNoRioLento);
 
 	fprintf(report, "\n\nPessoas que foram à enfermaria: %d", numPessoasFeridas);
 }
