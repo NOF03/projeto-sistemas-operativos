@@ -8,6 +8,7 @@ int newsockfd = 0;
 int idPessoa = 0;
 int minutosDecorridos = 0;
 int tempoLimite;
+int tempoInicial;
 struct simConfig simConfiguration;
 
 pthread_t IDthread[THREAD_SIZE];
@@ -139,6 +140,7 @@ void startSemaphoresAndLatches()
 	parque.capacidadeAtualSitios[PISTASRAPIDAS] = 0;
 
 	minutosDecorridos = current_timestamp();
+	tempoInicial = current_timestamp();
 	tempoLimite = current_timestamp() + HORA * 7;
 }
 
@@ -220,6 +222,9 @@ void UsePark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGÃS. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque--;
+				pthread_mutex_unlock(&mutexPessoasParque);
 				if (pessoa->noEstacionamento)
 				{
 
@@ -309,6 +314,9 @@ void UsePark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGÃS. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque--;
+				pthread_mutex_unlock(&mutexPessoasParque);
 				if (pessoa->noEstacionamento)
 				{
 
@@ -366,6 +374,9 @@ void UsePark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha PISCINA. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque--;
+				pthread_mutex_unlock(&mutexPessoasParque);
 				if (pessoa->noEstacionamento)
 				{
 
@@ -423,6 +434,9 @@ void UsePark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha ESCORREGAS. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque--;
+				pthread_mutex_unlock(&mutexPessoasParque);
 				if (pessoa->noEstacionamento)
 				{
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
@@ -480,6 +494,9 @@ void UsePark(struct Person *pessoa)
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha RIOLENTO. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
+				pthread_mutex_lock(&mutexPessoasParque);
+				parque.numeroPessoasNoParque--;
+				pthread_mutex_unlock(&mutexPessoasParque);
 				if (pessoa->noEstacionamento)
 				{
 
@@ -851,6 +868,23 @@ void Simulation()
 	while (minutosDecorridos <= tempoLimite)
 	{
 		minutosDecorridos = current_timestamp();
+		for (int i = 1; i < 6; i++)
+		{
+			if (minutosDecorridos == tempoInicial + HORA * i)
+			{
+				for (int j = 0; j < 10; j++)
+				{
+					if (pthread_create(&IDthread[idPessoa], NULL, Person, NULL))
+					{
+
+						printf("Erro na criação da tarefa \n");
+						exit(1);
+					}
+				}
+			}
+		}
+
+		
 	}
 
 	usleep(12000000);
