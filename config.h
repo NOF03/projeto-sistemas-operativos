@@ -48,7 +48,7 @@ struct simConfig {
     int capCabanas;
     float probSairFilaEntrada;
 	float probSairAtracoes;
-	bool tobogansFunci;
+	bool tobogasFunci;
 	bool piscinaFunci;
 	bool pistasFunci;
     bool escorregaFunci;

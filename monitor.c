@@ -5,7 +5,7 @@
 
 struct monConfig monConfiguration;
 int sockfd = 0;
-int numPessoasFeridas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramTobogan = 0, numPessoasEntraramPistasRapidas = 0, numPessoasEntraramPiscina = 0, numPessoasEntraramEscorrega = 0, numPessoasEntraramRioLento = 0, numCabanasOcupadas = 0, numPessoasBalnearios = 0;
+int numPessoasFeridas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramToboga = 0, numPessoasEntraramPistasRapidas = 0, numPessoasEntraramPiscina = 0, numPessoasEntraramEscorrega = 0, numPessoasEntraramRioLento = 0, numCabanasOcupadas = 0, numPessoasBalnearios = 0;
 int totalTempoEntrarNoEstacionamento = 1, medioTempoEntrarNoEstacionamento = 1, totalTempoEntrarNoParque = 1, medioTempoEntrarNoParque = 1, totalTempoEntrarNoToboga = 1, medioTempoEntrarNoToboga = 1, totalTempoEntrarNoPistasRapidas = 1, medioTempoEntrarNoPistasRapidas = 1, totalTempoEntrarNoPiscina = 1, medioTempoEntrarNoPiscina = 1, totalTempoEntrarNoEscorrega = 1, medioTempoEntrarNoEscorrega = 1, totalTempoEntrarNoRioLento = 1, medioTempoEntrarNoRioLento = 1;
 bool simulacaoAtiva = TRUE;
 
@@ -81,10 +81,10 @@ void trataMensagem(char *mensagem)
 		numCacifosOcupados--;
 		break;
 	case 67:
-		numPessoasEntraramTobogan++;
+		numPessoasEntraramToboga++;
 
 		totalTempoEntrarNoToboga += timeDifference * 20;
-		medioTempoEntrarNoToboga = totalTempoEntrarNoToboga / numPessoasEntraramTobogan;
+		medioTempoEntrarNoToboga = totalTempoEntrarNoToboga / numPessoasEntraramToboga;
 
 		break;
 	case 68:
@@ -133,7 +133,7 @@ void trataMensagem(char *mensagem)
 	default:
 		break;
 	}
-	printf("Estado atual => Simulacao a decorrer!\n");
+	printf("Estado atual => Simulação a decorrer!\n");
 	printf("Pessoas que queriam entrar no parque: %d\n", numPessoasQueriamEntrarParque);
 	printf("Pessoas na fila de espera do parque: %d || Tempo médio de espera: %d min\n", numPessoasFilaParque, medioTempoEntrarNoParque);
 	printf("Pessoas na fila de espera do estacionamento: %d || Tempo médio de espera: %d min\n", numPessoasFilaEstacionamento, medioTempoEntrarNoEstacionamento);
@@ -141,7 +141,7 @@ void trataMensagem(char *mensagem)
 	printf("Pessoas no parque: %d\n", numPessoasParque);
 	printf("Cacifos Ocupados: %d\n", numCacifosOcupados);
 	printf("Cabanas Ocupadas: %d\n", numCabanasOcupadas);
-	printf("Vezes que foram no Tobogan: %d || Tempo médio de espera: %d min\n", numPessoasEntraramTobogan, medioTempoEntrarNoToboga);
+	printf("Vezes que foram no Tobogã: %d || Tempo médio de espera: %d min\n", numPessoasEntraramToboga, medioTempoEntrarNoToboga);
 	printf("Vezes que foram nas Pistas Rápidas: %d || Tempo médio de espera: %d min\n", numPessoasEntraramPistasRapidas, medioTempoEntrarNoPistasRapidas);
 	printf("Vezes que foram na Piscina: %d || Tempo médio de espera: %d min\n", numPessoasEntraramPiscina, medioTempoEntrarNoPiscina);
 	printf("Vezes que foram na Escorrega: %d || Tempo médio de espera: %d min\n", numPessoasEntraramEscorrega, medioTempoEntrarNoEscorrega);
@@ -222,7 +222,7 @@ void escreveRelatorio(FILE *report)
 	fprintf(report, "\n\nNumero de pessoas que utilizaram os balneários: %d", numPessoasBalnearios);
 
 	fprintf(report, "\n\nNumero de pessoas que utilizaram cada atração:");
-	fprintf(report, "\n	Tobogans: %d || Tempo médio de espera: %d min", numPessoasEntraramTobogan, medioTempoEntrarNoToboga);
+	fprintf(report, "\n	Tobogãs: %d || Tempo médio de espera: %d min", numPessoasEntraramToboga, medioTempoEntrarNoToboga);
 	fprintf(report, "\n	Escorrega: %d || Tempo médio de espera: %d min", numPessoasEntraramEscorrega, medioTempoEntrarNoEscorrega);
 	fprintf(report, "\n	Pistas Rápidas: %d || Tempo médio de espera: %d min", numPessoasEntraramPistasRapidas, medioTempoEntrarNoPistasRapidas);
 	fprintf(report, "\n	Piscina: %d || Tempo médio de espera: %d min", numPessoasEntraramPiscina, medioTempoEntrarNoPiscina);
@@ -252,7 +252,7 @@ void initializeVariables()
 	numPessoasFilaParque = 0;
 	numPessoasFilaEstacionamento = 0;
 	numCacifosOcupados = 0;
-	numPessoasEntraramTobogan = 0;
+	numPessoasEntraramToboga = 0;
 	numPessoasEntraramPistasRapidas = 0;
 	numPessoasEntraramPiscina = 0;
 	numPessoasEntraramEscorrega = 0;

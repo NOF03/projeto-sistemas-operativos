@@ -59,7 +59,7 @@ enum Sitios
 	CACIFOS,
 	CABANAS,
 	PISTASRAPIDAS,
-	TOBOGAN,
+	TOBOGA,
 	PISCINA,
 	RIOLENTO,
 	ESCORREGA,
@@ -88,7 +88,7 @@ void atribuirConfiguracao(char **results)
 	simConfiguration.capCacifos = atoi(results[3]);
 	simConfiguration.capCabanas = atoi(results[4]);
 	simConfiguration.probSairFilaEntrada = strtof(results[5], NULL);
-	simConfiguration.tobogansFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
+	simConfiguration.tobogasFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
 	simConfiguration.piscinaFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
 	simConfiguration.pistasFunci = (strcmp(results[8], "Sim") > 0) ? true : false;
 	simConfiguration.escorregaFunci = (strcmp(results[9], "Sim") > 0) ? true : false;
@@ -130,7 +130,7 @@ void startSemaphoresAndLatches()
 	sem_init(&parque.filaSitios[CABANAS], 0, simConfiguration.capCabanas);
 	sem_init(&parque.filaSitios[ENFERMARIA], 0, 10);
 	sem_init(&parque.filaSitios[PISTASRAPIDAS], 0, 4);
-	sem_init(&parque.filaSitios[TOBOGAN], 0, 2);
+	sem_init(&parque.filaSitios[TOBOGA], 0, 2);
 	sem_init(&parque.filaSitios[RIOLENTO], 0, simConfiguration.capAtracoes);
 	sem_init(&parque.filaSitios[PISCINA], 0, simConfiguration.capAtracoes);
 	sem_init(&parque.filaSitios[ESCORREGA], 0, 1);
@@ -190,22 +190,22 @@ void UsePark(struct Person *pessoa)
 		}
 		pessoa->sitio = sitioEscolhido;
 		break;
-	case TOBOGAN:
-		if (simConfiguration.tobogansFunci)
+	case TOBOGA:
+		if (simConfiguration.tobogasFunci)
 		{
 			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
 			{
-				pessoa->sitio = TOBOGAN;
+				pessoa->sitio = TOBOGA;
 				long long timestamp = current_timestamp();
-				sem_wait(&parque.filaSitios[TOBOGAN]);
+				sem_wait(&parque.filaSitios[TOBOGA]);
 				if (minutosDecorridos >= tempoLimite)
 				{
-					sem_post(&parque.filaSitios[TOBOGAN]);
+					sem_post(&parque.filaSitios[TOBOGA]);
 					break;
 				}
-				printf(AMARELO "O visitante %d divertiu-se nos TOBOGANS.\n" RESET, pessoa->id);
+				printf(AMARELO "O visitante %d divertiu-se nos TOBOGÃS.\n" RESET, pessoa->id);
 				sendMessage("C", current_timestamp() - timestamp);
-				sem_post(&parque.filaSitios[TOBOGAN]);
+				sem_post(&parque.filaSitios[TOBOGA]);
 				if (probabilidade(simConfiguration.probPessoaFerir))
 				{
 					pessoa->sitio = ENFERMARIA;
@@ -218,7 +218,7 @@ void UsePark(struct Person *pessoa)
 			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
 			{
 				pessoa->desistiu = TRUE;
-				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
+				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGÃS. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
@@ -307,7 +307,7 @@ void UsePark(struct Person *pessoa)
 			if (probabilidade(simConfiguration.probSairSemUmaAtracao))
 			{
 				pessoa->desistiu = TRUE;
-				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
+				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGÃS. %s\n", pessoa->id, mensagem);
 				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
