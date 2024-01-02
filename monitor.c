@@ -165,7 +165,6 @@ void readMessage()
 		char *response = strtok(buffer, "-");
 		while (response != NULL)
 		{
-			printf("%s", response);
 			trataMensagem(response);
 			response = strtok(NULL, "-");
 		}
@@ -274,6 +273,8 @@ void initializeVariables()
 	medioTempoEntrarNoEscorrega = 1;
 	totalTempoEntrarNoRioLento = 1; 
 	medioTempoEntrarNoRioLento = 1;
+	simulacaoAtiva = true;
+	system("clear");
 }
 
 int simulacao()
@@ -284,6 +285,7 @@ int simulacao()
 	{
 		readMessage();
 	}
+	printf("\nEstado atual => Simulacao realizada!\n");
 	FILE *report = fopen(REPFILE, "w");
 
 	escreveTitulo(monConfiguration.nomeParque, report);
@@ -315,7 +317,6 @@ int main(int argc, char **argv)
 		switch (opcao)
 		{
 		case 1:
-			simulacaoAtiva = true;
 			initializeVariables();
 			atribuirConfiguracao(carregarConfiguracao(argv[1]));
 			ligacaoSocket();

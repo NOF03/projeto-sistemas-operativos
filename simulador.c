@@ -82,25 +82,23 @@ sem_t semCriarPessoa;
 void atribuirConfiguracao(char **results)
 {
 
-	simConfiguration.simDias = atoi(results[0]);
-	simConfiguration.tempoMedioDeEspera = atoi(results[1]);
-	simConfiguration.capAtracoes = atoi(results[2]);
-	simConfiguration.capBalnearios = atoi(results[3]);
-	simConfiguration.capCacifos = atoi(results[4]);
-	simConfiguration.capCabanas = atoi(results[5]);
-	simConfiguration.probSairFilaEntrada = strtof(results[6], NULL);
-	simConfiguration.probSairAtracoes = strtof(results[7], NULL);
-	simConfiguration.tobogansFunci = (strcmp(results[8], "Sim") > 0) ? true : false;
-	simConfiguration.piscinaFunci = (strcmp(results[9], "Sim") > 0) ? true : false;
-	simConfiguration.pistasFunci = (strcmp(results[10], "Sim") > 0) ? true : false;
-	simConfiguration.escorregaFunci = (strcmp(results[11], "Sim") > 0) ? true : false;
-	simConfiguration.rioLentoFunci = (strcmp(results[12], "Sim") > 0) ? true : false;
-	simConfiguration.probEntrarNumaAtracao = strtof(results[13], NULL);
-	simConfiguration.probSairSemUmaAtracao = strtof(results[14], NULL);
-	simConfiguration.probPessoaFerir = strtof(results[15], NULL);
-	simConfiguration.lotEstacionamento = atoi(results[16]);
-	simConfiguration.lotParque = atoi(results[17]);
-	simConfiguration.probSairSemEstacionamento = strtof(results[18], NULL);
+	simConfiguration.tempoMedioDeEspera = atoi(results[0]);
+	simConfiguration.capAtracoes = atoi(results[1]);
+	simConfiguration.capBalnearios = atoi(results[2]);
+	simConfiguration.capCacifos = atoi(results[3]);
+	simConfiguration.capCabanas = atoi(results[4]);
+	simConfiguration.probSairFilaEntrada = strtof(results[5], NULL);
+	simConfiguration.tobogansFunci = (strcmp(results[6], "Sim") > 0) ? true : false;
+	simConfiguration.piscinaFunci = (strcmp(results[7], "Sim") > 0) ? true : false;
+	simConfiguration.pistasFunci = (strcmp(results[8], "Sim") > 0) ? true : false;
+	simConfiguration.escorregaFunci = (strcmp(results[9], "Sim") > 0) ? true : false;
+	simConfiguration.rioLentoFunci = (strcmp(results[10], "Sim") > 0) ? true : false;
+	simConfiguration.probEntrarNumaAtracao = strtof(results[11], NULL);
+	simConfiguration.probSairSemUmaAtracao = strtof(results[12], NULL);
+	simConfiguration.probPessoaFerir = strtof(results[13], NULL);
+	simConfiguration.lotEstacionamento = atoi(results[14]);
+	simConfiguration.lotParque = atoi(results[15]);
+	simConfiguration.probSairSemEstacionamento = strtof(results[16], NULL);
 
 	return;
 };
@@ -839,7 +837,7 @@ void Simulation()
 	int semValue;
 	int numeroPessoas = numeroAleatorio(600, 200);
 
-	printf("O PARQUE ESTÁ ABERTO. VAI COMEÇAR A SIMULAÇÃO.\n");
+	printf("\nO PARQUE ESTÁ ABERTO. VAI COMEÇAR A SIMULAÇÃO.\n");
 	usleep(5000000);
 
 	for (idx = 0; idx < numeroPessoas; idx++)
@@ -865,6 +863,7 @@ void Simulation()
 		}
 	}
 	sendMessage("Z", 0);
+	printf(RESET "\nO PARQUE ESTÁ ENCERRADO. SIMULAÇÃO TERMINADA!\n");
 }
 
 void serverCreation()
@@ -899,6 +898,7 @@ void serverCreation()
 	else if (childpid == 0)
 	{
 		close(sockfd);
+		system("clear");
 		Simulation();
 	}
 	close(newsockfd);
