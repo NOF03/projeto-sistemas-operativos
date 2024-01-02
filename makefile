@@ -1,4 +1,3 @@
-# Specify the build directory
 BUILD_DIR := build
 
 all: clean $(BUILD_DIR)/simulador $(BUILD_DIR)/monitor

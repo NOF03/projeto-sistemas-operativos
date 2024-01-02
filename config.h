@@ -37,9 +37,7 @@
 #define CIANO "\x1B[36m"
 #define BRANCO "\x1B[37m"
 
-#define MINUTO 42        // em milisegundos
 #define HORA 42 * 60     // em milisegundos
-#define DIA 42 * 60 * 24 // em milisegundos
 
 struct simConfig {
     int tempoMedioDeEspera;
