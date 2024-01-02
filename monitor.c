@@ -1,11 +1,12 @@
 #include "config.h"
 
 #define CONFFILE "monitor.conf"
-#define REPFILE "relatorio.txt"
+#define REPFILE "relatorio.out"
 
 struct monConfig monConfiguration;
 int sockfd = 0;
 int numPessoasFeridas = 0, numPessoasParque = 0, numPessoasEstacionamento = 0, numPessoasQueriamEntrarParque = 0, numPessoasFilaParque = 0, numPessoasFilaEstacionamento = 0, numCacifosOcupados = 0, numPessoasEntraramTobogan = 0, numPessoasEntraramPistasRapidas = 0, numPessoasEntraramPiscina = 0, numPessoasEntraramEscorrega = 0, numPessoasEntraramRioLento = 0, numCabanasOcupadas = 0, numPessoasBalnearios = 0;
+int totalTempoEntrarNoEstacionamento = 1, medioTempoEntrarNoEstacionamento = 1, totalTempoEntrarNoParque = 1, medioTempoEntrarNoParque = 1, totalTempoEntrarNoToboga = 1, medioTempoEntrarNoToboga = 1, totalTempoEntrarNoPistasRapidas = 1, medioTempoEntrarNoPistasRapidas = 1, totalTempoEntrarNoPiscina = 1, medioTempoEntrarNoPiscina = 1, totalTempoEntrarNoEscorrega = 1, medioTempoEntrarNoEscorrega = 1, totalTempoEntrarNoRioLento = 1, medioTempoEntrarNoRioLento = 1;
 bool simulacaoAtiva = TRUE;
 
 void atribuirConfiguracao(char **results)
@@ -14,10 +15,26 @@ void atribuirConfiguracao(char **results)
 	return;
 }
 
-void trataMensagem(int mensagem)
+void trataMensagem(char *mensagem)
 {
 
-	switch (mensagem)
+	char *token;
+	char *eptr;
+	int timeDifference;
+
+	char *newMessage = malloc(strlen(mensagem) + 1);
+
+	strcpy(newMessage, mensagem);
+	token = strchr(mensagem, '|');
+	if (token != NULL) {
+		token++;
+		timeDifference = atoi(token);
+	}
+	
+
+	free(newMessage);
+
+	switch (mensagem[0])
 	{
 	case 49:
 		numPessoasQueriamEntrarParque++;
@@ -27,6 +44,10 @@ void trataMensagem(int mensagem)
 		break;
 	case 51:
 		numPessoasEstacionamento++;
+
+		totalTempoEntrarNoEstacionamento += timeDifference * 20;
+		medioTempoEntrarNoEstacionamento = totalTempoEntrarNoEstacionamento / numPessoasEstacionamento;
+
 		break;
 	case 52:
 		numPessoasEstacionamento--;
@@ -45,6 +66,10 @@ void trataMensagem(int mensagem)
 		break;
 	case 57:
 		numPessoasParque++;
+		
+		totalTempoEntrarNoParque += timeDifference * 20;
+		medioTempoEntrarNoParque = totalTempoEntrarNoParque / numPessoasParque;
+
 		break;
 	case 58:
 		numPessoasParque--;
@@ -57,18 +82,38 @@ void trataMensagem(int mensagem)
 		break;
 	case 67:
 		numPessoasEntraramTobogan++;
+
+		totalTempoEntrarNoToboga += timeDifference * 20;
+		medioTempoEntrarNoToboga = totalTempoEntrarNoToboga / numPessoasEntraramTobogan;
+
 		break;
 	case 68:
 		numPessoasEntraramPistasRapidas++;
+
+		totalTempoEntrarNoPistasRapidas += timeDifference * 2;
+		medioTempoEntrarNoPistasRapidas = totalTempoEntrarNoPistasRapidas / numPessoasEntraramPistasRapidas;
+
 		break;
 	case 69:
 		numPessoasEntraramPiscina++;
+
+		totalTempoEntrarNoPiscina += timeDifference * 20;
+		medioTempoEntrarNoPiscina = totalTempoEntrarNoPiscina / numPessoasEntraramPiscina;
+
 		break;
 	case 70:
 		numPessoasEntraramEscorrega++;
+
+		totalTempoEntrarNoEscorrega += timeDifference * 20;
+		medioTempoEntrarNoEscorrega = totalTempoEntrarNoEscorrega / numPessoasEntraramEscorrega;
+
 		break;
 	case 71:
 		numPessoasEntraramRioLento++;
+
+		totalTempoEntrarNoRioLento += timeDifference * 20;
+		medioTempoEntrarNoRioLento = totalTempoEntrarNoRioLento / numPessoasEntraramRioLento;
+
 		break;
 	case 72:
 		numCabanasOcupadas++;
@@ -82,7 +127,7 @@ void trataMensagem(int mensagem)
 	case 75:
 		numPessoasBalnearios++;
 		break;
-	case 33:
+	case 90:
 		simulacaoAtiva = FALSE;
 		break;
 	default:
@@ -90,17 +135,17 @@ void trataMensagem(int mensagem)
 	}
 	printf("Estado atual => Simulacao a decorrer!\n");
 	printf("Pessoas que queriam entrar no parque: %d\n", numPessoasQueriamEntrarParque);
-	printf("Pessoas na fila de espera do parque: %d\n", numPessoasFilaParque);
-	printf("Pessoas na fila de espera do estacionamento: %d\n", numPessoasFilaEstacionamento);
+	printf("Pessoas na fila de espera do parque: %d || Tempo médio de espera: %d min\n", numPessoasFilaParque, medioTempoEntrarNoParque);
+	printf("Pessoas na fila de espera do estacionamento: %d || Tempo médio de espera: %d min\n", numPessoasFilaEstacionamento, medioTempoEntrarNoEstacionamento);
 	printf("Pessoas no estacionamento do parque: %d\n", numPessoasEstacionamento);
 	printf("Pessoas no parque: %d\n", numPessoasParque);
 	printf("Cacifos Ocupados: %d\n", numCacifosOcupados);
 	printf("Cabanas Ocupadas: %d\n", numCabanasOcupadas);
-	printf("Vezes que foram no Tobogan: %d\n", numPessoasEntraramTobogan);
-	printf("Vezes que foram nas Pistas Rápidas: %d\n", numPessoasEntraramPistasRapidas);
-	printf("Vezes que foram na Piscina: %d\n", numPessoasEntraramPiscina);
-	printf("Vezes que foram na Escorrega: %d\n", numPessoasEntraramEscorrega);
-	printf("Vezes que foram no Rio Lento: %d\n", numPessoasEntraramRioLento);
+	printf("Vezes que foram no Tobogan: %d || Tempo médio de espera: %d min\n", numPessoasEntraramTobogan, medioTempoEntrarNoToboga);
+	printf("Vezes que foram nas Pistas Rápidas: %d || Tempo médio de espera: %d min\n", numPessoasEntraramPistasRapidas, medioTempoEntrarNoPistasRapidas);
+	printf("Vezes que foram na Piscina: %d || Tempo médio de espera: %d min\n", numPessoasEntraramPiscina, medioTempoEntrarNoPiscina);
+	printf("Vezes que foram na Escorrega: %d || Tempo médio de espera: %d min\n", numPessoasEntraramEscorrega, medioTempoEntrarNoEscorrega);
+	printf("Vezes que foram no Rio Lento: %d || Tempo médio de espera: %d min\n", numPessoasEntraramRioLento, medioTempoEntrarNoRioLento);
 	printf("Vezes que foram na Enfermaria: %d\n", numPessoasFeridas);
 	printf("Vezes que foram nos Balneários: %d\n", numPessoasBalnearios);
 }
@@ -117,10 +162,12 @@ void readMessage()
 	else if (size > 0)
 	{
 		buffer[size] = '\0';
-		for (int i = 0; i < size; i++)
+		char *response = strtok(buffer, "-");
+		while (response != NULL)
 		{
-			// printf("Mensagem recebida do servidor: %d\n", buffer[i]);
-			trataMensagem(buffer[i]);
+			printf("%s", response);
+			trataMensagem(response);
+			response = strtok(NULL, "-");
 		}
 	}
 	else
@@ -213,6 +260,20 @@ void initializeVariables()
 	numPessoasEntraramRioLento = 0;
 	numCabanasOcupadas = 0;
 	numPessoasBalnearios = 0;
+	totalTempoEntrarNoEstacionamento = 1;
+	medioTempoEntrarNoEstacionamento = 1;
+	totalTempoEntrarNoParque = 1;
+	medioTempoEntrarNoParque = 1;
+	totalTempoEntrarNoToboga = 1;
+	medioTempoEntrarNoToboga = 1;
+	totalTempoEntrarNoPistasRapidas = 1; 
+	medioTempoEntrarNoPistasRapidas = 1;
+	totalTempoEntrarNoPiscina = 1; 
+	medioTempoEntrarNoPiscina = 1;
+	totalTempoEntrarNoEscorrega = 1; 
+	medioTempoEntrarNoEscorrega = 1;
+	totalTempoEntrarNoRioLento = 1; 
+	medioTempoEntrarNoRioLento = 1;
 }
 
 int simulacao()

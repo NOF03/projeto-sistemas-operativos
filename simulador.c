@@ -57,7 +57,6 @@ enum Sitios
 {
 	NENHUM,
 	CACIFOS,
-	RESTAURANTE,
 	CABANAS,
 	PISTASRAPIDAS,
 	TOBOGAN,
@@ -131,7 +130,6 @@ void startSemaphoresAndLatches()
 	sem_init(&parque.filaSitios[BALNEARIOS], 0, simConfiguration.capBalnearios);
 	sem_init(&parque.filaSitios[CACIFOS], 0, simConfiguration.capCacifos);
 	sem_init(&parque.filaSitios[CABANAS], 0, simConfiguration.capCabanas);
-	sem_init(&parque.filaSitios[RESTAURANTE], 0, 30);
 	sem_init(&parque.filaSitios[ENFERMARIA], 0, 10);
 	sem_init(&parque.filaSitios[PISTASRAPIDAS], 0, 4);
 	sem_init(&parque.filaSitios[TOBOGAN], 0, 2);
@@ -161,9 +159,17 @@ char *distinguirPrioritario(struct Person *person)
 	return (person->prioritario) ? "PRIORITÁRIO" : "";
 }
 
-void sendMessage(char *sendingMessage)
+void sendMessage(char *sendingMessage, long long timestamp)
 {
-	write(newsockfd, sendingMessage, strlen(sendingMessage));
+	char timestampStr[BUF_SIZE];
+	snprintf(timestampStr, sizeof(timestampStr), "%lld", timestamp);
+
+	// Concatenate the timestamp and the original message
+	char combinedMessage[BUF_SIZE * 2];
+	snprintf(combinedMessage, sizeof(combinedMessage), "%s|%s-", sendingMessage, timestampStr);
+
+	// Send the combined message over the socket
+	write(newsockfd, combinedMessage, strlen(combinedMessage));
 }
 
 void UsePark(struct Person *pessoa)
@@ -171,9 +177,11 @@ void UsePark(struct Person *pessoa)
 	char mensagem[BUF_SIZE] = "";
 
 	int sitioEscolhido = numeroAleatorio(TOTAL - 2, 1);
-	if (sitioEscolhido == BALNEARIOS && probabilidade(0.7)) {
+	if (sitioEscolhido == BALNEARIOS && probabilidade(0.7))
+	{
 		sitioEscolhido = numeroAleatorio(TOTAL - 2, 1);
 	}
+	long long enterTimeStamp = current_timestamp();
 	switch (pessoa->sitio)
 	{
 	case NENHUM:
@@ -190,6 +198,7 @@ void UsePark(struct Person *pessoa)
 			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
 			{
 				pessoa->sitio = TOBOGAN;
+				long long timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[TOBOGAN]);
 				if (minutosDecorridos >= tempoLimite)
 				{
@@ -197,9 +206,10 @@ void UsePark(struct Person *pessoa)
 					break;
 				}
 				printf(AMARELO "O visitante %d divertiu-se nos TOBOGANS.\n" RESET, pessoa->id);
-				sendMessage("C");
+				sendMessage("C", current_timestamp() - timestamp);
 				sem_post(&parque.filaSitios[TOBOGAN]);
-				if (probabilidade(simConfiguration.probPessoaFerir)) {
+				if (probabilidade(simConfiguration.probPessoaFerir))
+				{
 					pessoa->sitio = ENFERMARIA;
 					break;
 				}
@@ -211,28 +221,28 @@ void UsePark(struct Person *pessoa)
 			{
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
-				sendMessage(":");
+				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
 
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 				if (pessoa->alugouCacifo)
 				{
 					pthread_mutex_lock(&mutexPessoasCacifos);
 					parque.numeroCacifosOcupados--;
 					pthread_mutex_unlock(&mutexPessoasCacifos);
-					sendMessage("B");
+					sendMessage("B", 0);
 				}
 				if (pessoa->alugouCabana)
 				{
 					pthread_mutex_lock(&mutexPessoasCabanas);
 					parque.numeroCabanasOcupadas--;
 					pthread_mutex_unlock(&mutexPessoasCabanas);
-					sendMessage("I");
+					sendMessage("I", 0);
 				}
 			}
 		}
@@ -246,6 +256,7 @@ void UsePark(struct Person *pessoa)
 
 				int semValue;
 				pessoa->sitio = PISTASRAPIDAS;
+				long long timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[PISTASRAPIDAS]);
 				if (minutosDecorridos >= tempoLimite)
 				{
@@ -269,7 +280,7 @@ void UsePark(struct Person *pessoa)
 				{
 				}
 				printf(AMARELO "O visitante %d divertiu-se nas PISTAS RÁPIDAS.\n" RESET, pessoa->id);
-				sendMessage("D");
+				sendMessage("D", current_timestamp() - timestamp);
 
 				pthread_mutex_lock(&mutexPessoasPistasRapidas);
 
@@ -286,7 +297,8 @@ void UsePark(struct Person *pessoa)
 
 				sem_post(&parque.filaSitios[PISTASRAPIDAS]);
 
-				if (probabilidade(simConfiguration.probPessoaFerir)) {
+				if (probabilidade(simConfiguration.probPessoaFerir))
+				{
 					pessoa->sitio = ENFERMARIA;
 					break;
 				}
@@ -298,28 +310,28 @@ void UsePark(struct Person *pessoa)
 			{
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha TOBOGANS. %s\n", pessoa->id, mensagem);
-				sendMessage(":");
+				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
 
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 				if (pessoa->alugouCacifo)
 				{
 					pthread_mutex_lock(&mutexPessoasCacifos);
 					parque.numeroCacifosOcupados--;
 					pthread_mutex_unlock(&mutexPessoasCacifos);
-					sendMessage("B");
+					sendMessage("B", 0);
 				}
 				if (pessoa->alugouCabana)
 				{
 					pthread_mutex_lock(&mutexPessoasCabanas);
 					parque.numeroCabanasOcupadas--;
 					pthread_mutex_unlock(&mutexPessoasCabanas);
-					sendMessage("I");
+					sendMessage("I", 0);
 				}
 			}
 		}
@@ -331,6 +343,7 @@ void UsePark(struct Person *pessoa)
 			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
 			{
 				pessoa->sitio = PISCINA;
+				long long timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[PISCINA]);
 				if (minutosDecorridos >= tempoLimite)
 				{
@@ -338,10 +351,11 @@ void UsePark(struct Person *pessoa)
 					break;
 				}
 				printf(AMARELO "O visitante %d divertiu-se na PISCINA.\n" RESET, pessoa->id);
-				sendMessage("E");
+				sendMessage("E", current_timestamp() - timestamp);
 				sem_post(&parque.filaSitios[PISCINA]);
 
-				if (probabilidade(simConfiguration.probPessoaFerir)) {
+				if (probabilidade(simConfiguration.probPessoaFerir))
+				{
 					pessoa->sitio = ENFERMARIA;
 					break;
 				}
@@ -353,28 +367,28 @@ void UsePark(struct Person *pessoa)
 			{
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha PISCINA. %s\n", pessoa->id, mensagem);
-				sendMessage(":");
+				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
 
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 				if (pessoa->alugouCacifo)
 				{
 					pthread_mutex_lock(&mutexPessoasCacifos);
 					parque.numeroCacifosOcupados--;
 					pthread_mutex_unlock(&mutexPessoasCacifos);
-					sendMessage("B");
+					sendMessage("B", 0);
 				}
 				if (pessoa->alugouCabana)
 				{
 					pthread_mutex_lock(&mutexPessoasCabanas);
 					parque.numeroCabanasOcupadas--;
 					pthread_mutex_unlock(&mutexPessoasCabanas);
-					sendMessage("I");
+					sendMessage("I", 0);
 				}
 			}
 		}
@@ -386,6 +400,7 @@ void UsePark(struct Person *pessoa)
 			if (probabilidade(simConfiguration.probEntrarNumaAtracao))
 			{
 				pessoa->sitio = ESCORREGA;
+				long long timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[ESCORREGA]);
 				if (minutosDecorridos >= tempoLimite)
 				{
@@ -393,10 +408,11 @@ void UsePark(struct Person *pessoa)
 					break;
 				}
 				printf(AMARELO "O visitante %d divertiu-se nos ESCORREGAS.\n" RESET, pessoa->id);
-				sendMessage("F");
+				sendMessage("F", current_timestamp() - timestamp);
 				sem_post(&parque.filaSitios[ESCORREGA]);
 
-				if (probabilidade(simConfiguration.probPessoaFerir)) {
+				if (probabilidade(simConfiguration.probPessoaFerir))
+				{
 					pessoa->sitio = ENFERMARIA;
 					break;
 				}
@@ -408,27 +424,27 @@ void UsePark(struct Person *pessoa)
 			{
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha ESCORREGAS. %s\n", pessoa->id, mensagem);
-				sendMessage(":");
+				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 				if (pessoa->alugouCacifo)
 				{
 					pthread_mutex_lock(&mutexPessoasCacifos);
 					parque.numeroCacifosOcupados--;
 					pthread_mutex_unlock(&mutexPessoasCacifos);
-					sendMessage("B");
+					sendMessage("B", 0);
 				}
 				if (pessoa->alugouCabana)
 				{
 					pthread_mutex_lock(&mutexPessoasCabanas);
 					parque.numeroCabanasOcupadas--;
 					pthread_mutex_unlock(&mutexPessoasCabanas);
-					sendMessage("I");
+					sendMessage("I", 0);
 				}
 			}
 		}
@@ -441,6 +457,7 @@ void UsePark(struct Person *pessoa)
 			{
 
 				pessoa->sitio = RIOLENTO;
+				long long timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[RIOLENTO]);
 				if (minutosDecorridos >= tempoLimite)
 				{
@@ -448,10 +465,11 @@ void UsePark(struct Person *pessoa)
 					break;
 				}
 				printf(AMARELO "O visitante %d divertiu-se na RIOLENTO.\n" RESET, pessoa->id);
-				sendMessage("G");
+				sendMessage("G", current_timestamp() - timestamp);
 				sem_post(&parque.filaSitios[RIOLENTO]);
 
-				if (probabilidade(simConfiguration.probPessoaFerir)) {
+				if (probabilidade(simConfiguration.probPessoaFerir))
+				{
 					pessoa->sitio = ENFERMARIA;
 					break;
 				}
@@ -463,55 +481,57 @@ void UsePark(struct Person *pessoa)
 			{
 				pessoa->desistiu = TRUE;
 				printf(VERMELHO "O visitante %d saiu do parque. Não tinha RIOLENTO. %s\n", pessoa->id, mensagem);
-				sendMessage(":");
+				sendMessage(":", 0);
 				if (pessoa->noEstacionamento)
 				{
 
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 				if (pessoa->alugouCacifo)
 				{
 					pthread_mutex_lock(&mutexPessoasCacifos);
 					parque.numeroCacifosOcupados--;
 					pthread_mutex_unlock(&mutexPessoasCacifos);
-					sendMessage("B");
+					sendMessage("B", 0);
 				}
 				if (pessoa->alugouCabana)
 				{
 					pthread_mutex_lock(&mutexPessoasCabanas);
 					parque.numeroCabanasOcupadas--;
 					pthread_mutex_unlock(&mutexPessoasCabanas);
-					sendMessage("I");
+					sendMessage("I", 0);
 				}
 			}
 		}
 		pessoa->sitio = NENHUM;
 		break;
 	case ENFERMARIA:
-
+		long long timestampEnf = current_timestamp();
 		sem_wait(&parque.filaSitios[ENFERMARIA]);
 		if (minutosDecorridos >= tempoLimite)
-				{
-					sem_post(&parque.filaSitios[ENFERMARIA]);
-					break;
-				}
+		{
+			sem_post(&parque.filaSitios[ENFERMARIA]);
+			break;
+		}
 		printf(MAGENTA "O visitante %d feriu-se e foi para a ENFERMARIA.\n", pessoa->id);
-		sendMessage("J");
+		sendMessage("J", current_timestamp() - timestampEnf);
 		sem_post(&parque.filaSitios[ENFERMARIA]);
 		pessoa->sitio = NENHUM;
 		break;
 	case BALNEARIOS:
+		long long timestamp = current_timestamp();
 		sem_wait(&parque.filaSitios[BALNEARIOS]);
 		if (minutosDecorridos >= tempoLimite)
-				{
-					sem_post(&parque.filaSitios[BALNEARIOS]);
-					break;
-				}
-		printf(CIANO "O visitante %d foi %s nos BALNEARIOS.\n", pessoa->id, probabilidade(0.33) ? "defecar" : probabilidade(0.5) ? "urinar" : "trocar de roupa");
-		sendMessage("K");
+		{
+			sem_post(&parque.filaSitios[BALNEARIOS]);
+			break;
+		}
+		printf(CIANO "O visitante %d foi %s nos BALNEARIOS.\n", pessoa->id, probabilidade(0.33) ? "defecar" : probabilidade(0.5) ? "urinar"
+																																 : "trocar de roupa");
+		sendMessage("K", current_timestamp() - timestamp);
 		sem_post(&parque.filaSitios[BALNEARIOS]);
 		pessoa->sitio = NENHUM;
 		break;
@@ -544,7 +564,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoasNoEstacionamento--;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("4");
+					sendMessage("4", 0);
 				}
 			}
 			else
@@ -553,7 +573,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 				pthread_mutex_lock(&mutexPessoasParque);
 				parque.numeroPessoaEspera++;
 				pthread_mutex_unlock(&mutexPessoasParque);
-				sendMessage("5");
+				sendMessage("5", 0);
 				sem_wait(&parque.filaParque);
 				pthread_mutex_lock(&mutexVariaveisSimulacao);
 				tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
@@ -573,27 +593,27 @@ void WaitingListWaterPark(struct Person *pessoa)
 					sem_post(&parque.filaParque);
 					pthread_mutex_unlock(&mutexPessoasParque);
 					printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera. %s\n", pessoa->id, mensagem);
-					sendMessage("6");
+					sendMessage("6", 0);
 					if (pessoa->noEstacionamento)
 					{
 						pthread_mutex_lock(&mutexPessoasEstacionamento);
 						parque.numeroPessoasNoEstacionamento--;
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
-						sendMessage("4");
+						sendMessage("4", 0);
 					}
 					if (pessoa->alugouCacifo)
 					{
 						pthread_mutex_lock(&mutexPessoasCacifos);
 						parque.numeroCacifosOcupados--;
 						pthread_mutex_unlock(&mutexPessoasCacifos);
-						sendMessage("B");
+						sendMessage("B", 0);
 					}
 					if (pessoa->alugouCabana)
 					{
 						pthread_mutex_lock(&mutexPessoasCabanas);
 						parque.numeroCabanasOcupadas--;
 						pthread_mutex_unlock(&mutexPessoasCabanas);
-						sendMessage("I");
+						sendMessage("I", 0);
 					}
 				}
 				else
@@ -605,8 +625,8 @@ void WaitingListWaterPark(struct Person *pessoa)
 					parque.numeroPessoaEspera--;
 					parque.numeroPessoasNoParque++;
 					pthread_mutex_unlock(&mutexPessoasParque);
-					sendMessage("6");
-					sendMessage("9");
+					sendMessage("6", 0);
+					sendMessage("9", current_timestamp() - pessoa->tempoChegadaFilaEspera);
 					sem_post(&parque.filaParque);
 					if (pessoa->precisaCacifo && parque.numeroCacifosOcupados < simConfiguration.capCacifos && !pessoa->alugouCacifo)
 					{
@@ -616,7 +636,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 						pthread_mutex_unlock(&mutexPessoasCacifos);
 						sem_post(&parque.filaSitios[CACIFOS]);
 						printf(CIANO "O visitante %s %d alugou cacifo.\n", distinguirPrioritario(pessoa), pessoa->id);
-						sendMessage("A");
+						sendMessage("A", 0);
 						pessoa->alugouCacifo = true;
 					}
 
@@ -628,7 +648,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 						pthread_mutex_unlock(&mutexPessoasCabanas);
 						sem_post(&parque.filaSitios[CABANAS]);
 						printf(CIANO "O visitante %s %d alugou cabana.\n", distinguirPrioritario(pessoa), pessoa->id);
-						sendMessage("H");
+						sendMessage("H", 0);
 						pessoa->alugouCabana = true;
 					}
 				}
@@ -642,7 +662,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 			pthread_mutex_lock(&mutexPessoasParque);
 			parque.numeroPessoasNoParque++;
 			pthread_mutex_unlock(&mutexPessoasParque);
-			sendMessage("9");
+			sendMessage("9", 0);
 			if (pessoa->precisaCacifo && parque.numeroCacifosOcupados < simConfiguration.capCacifos && !pessoa->alugouCacifo)
 			{
 				sem_wait(&parque.filaSitios[CACIFOS]);
@@ -651,7 +671,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 				pthread_mutex_unlock(&mutexPessoasCacifos);
 				sem_post(&parque.filaSitios[CACIFOS]);
 				printf(CIANO "O visitante %s %d alugou cacifo.\n", distinguirPrioritario(pessoa), pessoa->id);
-				sendMessage("A");
+				sendMessage("A", 0);
 				pessoa->alugouCacifo = true;
 			}
 
@@ -663,7 +683,7 @@ void WaitingListWaterPark(struct Person *pessoa)
 				pthread_mutex_unlock(&mutexPessoasCabanas);
 				sem_post(&parque.filaSitios[CABANAS]);
 				printf(CIANO "O visitante %s %d alugou cabana.\n", distinguirPrioritario(pessoa), pessoa->id);
-				sendMessage("H");
+				sendMessage("H", 0);
 				pessoa->alugouCabana = true;
 			}
 		}
@@ -699,9 +719,9 @@ void WaitingListParking(struct Person *pessoa)
 					pthread_mutex_lock(&mutexPessoasEstacionamento);
 					parque.numeroPessoaEsperaNoEstacionamento++;
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
-					sendMessage("7");
+					sendMessage("7", 0);
 					pessoa->tempoChegadaFilaEspera = current_timestamp();
-
+					printf("%lld", current_timestamp());
 					sem_wait(&parque.filaEstacionamento);
 					pthread_mutex_lock(&mutexVariaveisSimulacao);
 					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
@@ -724,7 +744,7 @@ void WaitingListParking(struct Person *pessoa)
 						sem_post(&parque.filaEstacionamento);
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
 						printf(VERMELHO "O visitante %d desistiu. Passou muito tempo a espera no estacionamento. %s\n", pessoa->id, mensagem);
-						sendMessage("8");
+						sendMessage("8", 0);
 					}
 					else
 					{
@@ -735,8 +755,9 @@ void WaitingListParking(struct Person *pessoa)
 						parque.numeroPessoaEsperaNoEstacionamento--;
 						parque.numeroPessoasNoEstacionamento++;
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
-						sendMessage("8");
-						sendMessage("3");
+						sendMessage("8", 0);
+						printf("%lld", current_timestamp());
+						sendMessage("3", current_timestamp() - pessoa->tempoChegadaFilaEspera);
 						sem_post(&parque.filaEstacionamento);
 						WaitingListWaterPark(pessoa);
 					}
@@ -776,16 +797,16 @@ struct Person createPerson()
 
 void *Person()
 {
-
 	sem_wait(&semCriarPessoa);
 	struct Person onePerson = createPerson();
 	printf(RESET "Um visitante quer entrar no parque. Numero %d.\n", onePerson.id);
-	sendMessage("1");
+	sendMessage("1", 0);
 	sem_post(&semCriarPessoa);
 	createdPeople[onePerson.id] = &onePerson;
 	char buffer[BUF_SIZE];
 	WaitingListParking(&onePerson);
-	if (onePerson.desistiu) return NULL;
+	if (onePerson.desistiu)
+		return NULL;
 	while (TRUE)
 	{
 		usleep(300000);
@@ -796,7 +817,7 @@ void *Person()
 				printf(AZUL "O visitante %d divirtiu-se e saiu quando o parque fechou!\n", onePerson.id);
 				break;
 			}
-			
+
 			UsePark(&onePerson);
 		}
 		else
@@ -843,7 +864,7 @@ void Simulation()
 		{
 		}
 	}
-	sendMessage("!");
+	sendMessage("Z", 0);
 }
 
 void serverCreation()
