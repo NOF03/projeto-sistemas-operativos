@@ -719,7 +719,6 @@ void WaitingListParking(struct Person *pessoa)
 					pthread_mutex_unlock(&mutexPessoasEstacionamento);
 					sendMessage("7", 0);
 					pessoa->tempoChegadaFilaEspera = current_timestamp();
-					printf("%lld", current_timestamp());
 					sem_wait(&parque.filaEstacionamento);
 					pthread_mutex_lock(&mutexVariaveisSimulacao);
 					tempoEspera = current_timestamp() - pessoa->tempoChegadaFilaEspera; // TEMPO MAX DE ESPERA DA PESSOA
@@ -754,7 +753,6 @@ void WaitingListParking(struct Person *pessoa)
 						parque.numeroPessoasNoEstacionamento++;
 						pthread_mutex_unlock(&mutexPessoasEstacionamento);
 						sendMessage("8", 0);
-						printf("%lld", current_timestamp());
 						sendMessage("3", current_timestamp() - pessoa->tempoChegadaFilaEspera);
 						sem_post(&parque.filaEstacionamento);
 						WaitingListWaterPark(pessoa);

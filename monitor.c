@@ -90,7 +90,7 @@ void trataMensagem(char *mensagem)
 	case 68:
 		numPessoasEntraramPistasRapidas++;
 
-		totalTempoEntrarNoPistasRapidas += timeDifference * 2;
+		totalTempoEntrarNoPistasRapidas += timeDifference;
 		medioTempoEntrarNoPistasRapidas = totalTempoEntrarNoPistasRapidas / numPessoasEntraramPistasRapidas;
 
 		break;
