@@ -850,7 +850,7 @@ void Simulation()
 	int idx;
 	char sendingMessage[BUF_SIZE];
 	int semValue;
-	int numeroPessoas = numeroAleatorio(600, 200);
+	int numeroPessoas = numeroAleatorio(1000, 800);
 
 	printf("\nO PARQUE ESTÁ ABERTO. VAI COMEÇAR A SIMULAÇÃO.\n");
 	usleep(5000000);
