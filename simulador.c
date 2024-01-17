@@ -259,7 +259,8 @@ void UsePark(struct Person *pessoa)
 
 				int semValue;
 				pessoa->sitio = PISTASRAPIDAS;
-				long long timestamp = current_timestamp();
+				long long timestamp;
+				timestamp = current_timestamp();
 				sem_wait(&parque.filaSitios[PISTASRAPIDAS]);
 				if (minutosDecorridos >= tempoLimite)
 				{
